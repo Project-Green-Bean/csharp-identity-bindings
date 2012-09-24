@@ -10,4 +10,3 @@ Keystone Identity Bindings in C#
 - touched by Kendall
 - touched by Arnold Yang
 - touched by Tommy Arnold
-- touched by David
