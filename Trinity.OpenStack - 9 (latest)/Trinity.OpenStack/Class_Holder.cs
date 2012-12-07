@@ -1064,10 +1064,10 @@ namespace Trinity.OpenStack
 
     #endregion
 
-    # region Services
+    #region Service Methods
     //------------------------------------------------
     // by Arnold Yang
-    // last updated on 3:51 PM 5 Dec 2012
+    // last updatd on 3:47 PM 6 Dec 2012
     //------------------------------------------------
 
     public class Service
@@ -1093,30 +1093,17 @@ namespace Trinity.OpenStack
         public static string Create(string url, string name, string service_type, string description,
                                             string admin_token)
         {
-            // url: "/OS-KSADM/services/%s"
-            // post: "OS-KSADM:services"
-            /* 
-             * body = {"OS-KSADM:service": {'name': name,
-                                     'type': service_type,
-                                     'description': description}}
-               return self._create("/OS-KSADM/services", body, "OS-KSADM:service")
-            */
 
-            Service return_user = new Service();
+
+            //Service return_user = new Service();
             string ret = "";
             StreamWriter requestWriter;
 
-            /*String post_data = "{" + "\"OS-KSADM:service\": { " +
-                                     "\'name\': \"" + name + "\", " +
-                                     "\'type\': \"" + service_type + "\", " +
-                                     "\'description\': \"" + description +
-                                     "}}";*/
-
-            String post_data = "{" + "\"OS-KSADM:service\": { " +
-                                     "\'type\': \"" + service_type + "\", " +
-                                     "\'description\': \"" + description + "\", " +
-                                     "\'name\': \"" + name +
-                                     "}}";
+            String post_data = "{" + "\"OS-KSADM:service\": {" +
+                                     "\"type\": \"" + service_type + "\", " +
+                                     "\"description\": \"" + description + "\", " +
+                                     "\"name\": \"" + name +
+                                     "\"}}";
 
             try
             {
@@ -1178,8 +1165,6 @@ namespace Trinity.OpenStack
         //------------------------------------------------
         public static string Delete(string url, string service_id, string admin_token)
         {
-            // url: "/OS-KSADM/services/%s" % id
-
             string ret = "";
             try
             {
@@ -1286,6 +1271,7 @@ namespace Trinity.OpenStack
 
     } //end class
 
-    # endregion Services
+    #endregion
+    
 
 } // end Trinity.OpenStack Namespace
