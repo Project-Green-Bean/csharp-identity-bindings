@@ -318,7 +318,7 @@ namespace Trinity.OpenStack
             }
         }
 
-        private string Tenant_List(string url, string User_Token)
+        public string Tenant_List(string url, string User_Token)
         {
 
 
@@ -387,7 +387,7 @@ namespace Trinity.OpenStack
             }
         }
 
-        private string Delete_Tenant(string adminUrl, string User_Token, string tenantId)
+        public string Delete_Tenant(string adminUrl, string User_Token, string tenantId)
         {
          
             string ret = string.Empty;
@@ -850,18 +850,35 @@ namespace Trinity.OpenStack
 
 #endregion
 
-    #region "End Points"
+  
+    #region Endpoints
     public class Endpoint
     {
+        public string internal_url;
+        public string public_url;
+        public string admin_url;
+        public string region;
+        public string name;
+        public string type;
+        public string id;
 
+        public string endpoint_error;
 
-        private string Delete_Endpoint(string url, string adminToken, string endpointId)
+        /// <summary>
+        /// This function permanently deletes the endpoint that calls it with a DELETE call.
+        /// </summary> The url is the OpenStack server address. The port required is the admin port number. For example: http://sampleserveraddress:35357, where 35357 is the admin port.
+        /// <param name="url">
+        /// </param>
+        /// <param name="adminToken"> This is the id of a token given to a user with admin permissions.
+        /// </param>
+        /// <returns>Returns an empty string if successful and an error message as a string if unsuccessful</returns>
+        public string Delete_Endpoint(string url, string adminToken)
         {
             string ret = string.Empty;
             try
             {
 
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + "/v2.0/endpoints/" + endpointId);
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + "/v2.0/endpoints/" + this.id);
 
                 webRequest.Method = "DELETE";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -883,9 +900,116 @@ namespace Trinity.OpenStack
                 return x.ToString();
             }
         }
-
-        private string List_Endpoints(string url, string userToken)
+        /// <summary>
+        /// Cleanly displays information about the endpoint. Includes all of the field in the endpoint class.
+        /// This does not make a server call.
+        /// </summary>
+        /// <returns>An easy to read string of the endpoint's parameters</returns>
+        public override string ToString()
         {
+            string ret = "name: " + this.name + Environment.NewLine +
+                         "admin URL: " + this.admin_url + Environment.NewLine +
+                         "region: " + this.region + Environment.NewLine +
+                         "internal URL: " + this.internal_url + Environment.NewLine +
+                         "type: " + this.type + Environment.NewLine +
+                         "id: " + this.id + Environment.NewLine +
+                         "public URL: " + this.public_url + Environment.NewLine;
+            return ret;
+        }
+
+        /// <summary>
+        /// Takes raw json and converts it into an endpoint.
+        /// Json infomation must include at bare minimum:
+        /// name, adminURL, internalURL, public URL, type, and id.
+        /// This is not a server call.
+        /// </summary>
+        /// <param name="string_to_parse">json string that is to be turned into an endpoint.  </param>
+        /// <returns>If successful, will parse will return an endpoint with the given fields filled in. If unsuccessful will return an endpoint with the endpoint error field filled</returns>
+        public static Endpoint Parse(string string_to_parse)
+        {
+
+            Endpoint _endpoint = new Endpoint();
+
+            try
+            {
+                JObject oServerReturn = JObject.Parse(string_to_parse);
+                String nameStr = oServerReturn["name"].ToString();
+
+                String adminURLStr = oServerReturn["adminURL"].ToString();
+                String internalURL = oServerReturn["internalURL"].ToString();
+                String publicURLStr = oServerReturn["publicURL"].ToString();
+
+                String typeStr = oServerReturn["type"].ToString();
+                String regionStr = oServerReturn["region"].ToString();
+                String idStr = oServerReturn["id"].ToString();
+
+
+                _endpoint.admin_url = adminURLStr;
+                _endpoint.internal_url = internalURL;
+                _endpoint.public_url = publicURLStr;
+                _endpoint.region = regionStr;
+                _endpoint.name = nameStr;
+                _endpoint.id = idStr;
+                _endpoint.type = typeStr;
+                _endpoint.endpoint_error = "";
+
+                return _endpoint;
+            }
+            catch (Exception x)
+            {
+                try
+                {
+                    JObject oServerReturn = JObject.Parse(string_to_parse);
+                    String nameStr = oServerReturn["endpoint"]["name"].ToString();
+
+                    String adminURLStr = oServerReturn["endpoint"]["adminurl"].ToString();
+                    String internalURL = oServerReturn["endpoint"]["internalurl"].ToString();
+                    String publicURLStr = oServerReturn["endpoint"]["publicurl"].ToString();
+
+                    //String typeStr = oServerReturn["endpoint"]["type"].ToString();
+                    String regionStr = oServerReturn["endpoint"]["region"].ToString();
+                    String idStr = oServerReturn["endpoint"]["id"].ToString();
+
+
+                    _endpoint.admin_url = adminURLStr;
+                    _endpoint.internal_url = internalURL;
+                    _endpoint.public_url = publicURLStr;
+                    _endpoint.region = regionStr;
+                    _endpoint.name = nameStr;
+                    _endpoint.id = idStr;
+                 //   _endpoint.type = typeStr;
+                    _endpoint.endpoint_error = "";
+
+                    return _endpoint;
+                }
+                catch
+                {
+
+                    _endpoint.endpoint_error = x.ToString();
+                    return _endpoint;
+                }
+            }
+        }
+
+}
+    
+#endregion
+
+#region Endpoint Manager
+    public class EndpointManager
+    {
+        public List<Endpoint> endpoint_list;
+        public string endpoint_manager_error;
+
+        /// <summary>
+        /// Lists all endpoints in the server connected to the user associated with the userToken with a GET call. Fills in the endpoint_list field of the endpoint manager
+        /// </summary>
+        /// <param name="url">The url is the OpenStack server address. The port required is the admin port number. For example: http://sampleserveraddress:35357, where 35357 is the admin port.</param>
+        /// <param name="userToken"> This is the id of a token given to a user. This determines which endpoints will be seen by the admin. If seeing all is desired, use the admin token as the user token as well.</param>
+        /// <param name="AdminToken"> This is the id of a token given to a user with admin permissions.</param>
+        public void List_Endpoints(string url, string userToken, string AdminToken)
+        {
+            List<Endpoint> Endpoint_List = new List<Endpoint>();
             string ret = string.Empty;
             try
             {
@@ -893,7 +1017,7 @@ namespace Trinity.OpenStack
 
                 webRequest.Method = "GET";
                 webRequest.ServicePoint.Expect100Continue = false;
-                webRequest.Headers.Add("X-Auth-Token", userToken);
+                webRequest.Headers.Add("X-Auth-Token", AdminToken);
                 webRequest.Timeout = 2000;
 
                 HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
@@ -903,18 +1027,37 @@ namespace Trinity.OpenStack
 
 
 
-                return ret;
+                JObject root = JObject.Parse(ret);
+                JArray ServerReturn = (JArray)root["endpoints"];
+
+                if (ServerReturn != null)
+                {
+
+                    for (int i = 0; i < ServerReturn.Count; i++)
+                    {
+                        Endpoint newEndpoint = new Endpoint();
+                        newEndpoint = Endpoint.Parse(ServerReturn[i].ToString());
+                        Endpoint_List.Add(newEndpoint);
+                    }
+
+
+                    endpoint_list = Endpoint_List;
+                }
+                else
+                {
+                    endpoint_list = new List<Endpoint>();
+                }
 
             }
             catch (Exception x)
             {
-                return x.ToString();
+                endpoint_manager_error = x.ToString();
             }
         }
 
     }
-    
 #endregion
+    
 
     #region Roles
     public class Role
@@ -1235,7 +1378,7 @@ namespace Trinity.OpenStack
         // List all services in service catalog
         // GET
         //------------------------------------------------
-        public static string List(string url, string admin_token)
+        public string List(string url, string admin_token)
         {
             string ret = "";
 
