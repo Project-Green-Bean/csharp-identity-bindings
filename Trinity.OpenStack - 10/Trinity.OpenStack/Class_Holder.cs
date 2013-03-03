@@ -56,7 +56,7 @@ namespace Trinity.OpenStack
             StreamWriter requestWriter;
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + "/v2.0/tokens");
                 webRequest.Method = "POST";
                 webRequest.ServicePoint.Expect100Continue = false;
                 webRequest.Timeout = 1000;
@@ -962,19 +962,19 @@ namespace Trinity.OpenStack
                 }
                 catch
                 {
-                     throw new BadJsonException("Json command was contained incorrect fields");
+                     throw new BadJsonException("Json command contained incorrect fields");
                 }
             }
         }
 
 
-        public static Endpoint Create_Endpoint(string admin_token_id, string user_id, string admin_url, string name, string region, string service_id, string public_url, string internal_url, string tenant_id)
+        public static Endpoint Create_Endpoint(string admin_token_id, string user_id, string admin_url, string service_name, string region, string service_id, string public_url, string internal_url, string tenant_id)
         {
             string ret = string.Empty;
             StreamWriter requestWriter;
             string postData = "{" +
                                 "\"endpoint\": {" +
-                                            "\"name\": \"" + name + "\", " +
+                                            "\"name\": \"" + service_name + "\", " +
                                             "\"region\": \"" + region + "\", " +
                                             "\"service_id\": \"" + service_id + "\"," +
                                             "\"publicurl\": \"" + public_url  + "/v2.0/" + tenant_id + "\"," +
@@ -1023,7 +1023,7 @@ namespace Trinity.OpenStack
     public class EndpointManager : OpenStackObject
     {
         public List<Endpoint> endpoint_list;
-        public OpenStackException endpoint_manager_error;
+        public Exception endpoint_manager_error;
 
         public EndpointManager() {
             base.Type = "Endpoint Manager";
@@ -1047,16 +1047,16 @@ namespace Trinity.OpenStack
                     for (int i = 0; i < ServerReturn.Count; i++)
                     {
                         Endpoint newEndpoint = new Endpoint();
-                        OpenStackObject temporaryObject =Endpoint.Parse(ServerReturn[i].ToString());
 
-                        if (temporaryObject.Type.Equals("Endpoint"))
+                        try
                         {
-                            newEndpoint = (Endpoint)temporaryObject;
+                            Endpoint temporaryObject = Endpoint.Parse(ServerReturn[i].ToString());
                         }
-                        else
+                        catch (Exception x)
                         {
-                            endpoint_manager_error = (OpenStackException) temporaryObject;
+                            endpoint_manager_error = x;
                         }
+                        
                         Endpoint_List.Add(newEndpoint);
                     }
 
@@ -1071,7 +1071,7 @@ namespace Trinity.OpenStack
             }
             catch (Exception x)
             {
-                endpoint_manager_error = OpenStackException.Parse(x.ToString());
+                endpoint_manager_error = x;
             }
         }
 
@@ -1620,6 +1620,269 @@ namespace Trinity.OpenStack
 
     }
 
+
+#endregion
+
+#region Test Functions
+
+    public class OpenStackTests
+    {
+        public string endpoint_testTenantid = String.Empty;
+        public string endpoint_testServiceid = String.Empty;
+        public User endpoint_testUser = new User();
+        public EndpointManager em = new EndpointManager();
+
+
+        public Boolean Set_Up_Create_Endpoints_Test(string admin_url, string admin_token, string testTenantName, string testServiceName)
+        {
+            Boolean ret = true;
+            string admin_url2 = admin_url + "/v2.0/";
+
+            string testTenantId = String.Empty;
+            string testUserName = "EndpointsTestUser";
+            string testUserPw = "eptu123";
+            Token testToken;
+            string testServiceId = String.Empty;
+
+            if (Create_Test_Tenant(ref testTenantId, testTenantName, admin_url2, admin_token))                            //Create Tenant
+            {
+                endpoint_testTenantid = testTenantId;
+                if (Create_Test_Service(ref testServiceId, testServiceName, admin_url2, admin_token))                     //Create Service
+                {
+                    endpoint_testServiceid = testServiceId;
+                    User u = User.Add(admin_url2 + "users/", testUserName, testUserPw, "true", testTenantId, "null", admin_token);
+                    if (u.name.Equals("EndpointsTestUser"))
+                    {
+                        endpoint_testUser = u;
+                        testToken = Token.Request_NoTenant(admin_url, testUserName, testUserPw);
+                        if (testToken.token_error.Equals(String.Empty))
+                        {
+                            em = new EndpointManager();
+                            return true;
+                        }
+                        else
+                        {
+                            Tear_Down_Create_Endpoints_Test(admin_url, admin_token, u, testServiceId, testTenantId);
+                            return false;
+                        }
+
+                    }
+                    else
+                    {
+                        Delete_Test_Service(testServiceId, admin_url2, admin_token);
+                        Delete_Test_Tenant(testTenantId, admin_url2, admin_token);
+                        return false;
+                    }
+                }
+                else
+                {
+                    Delete_Test_Tenant(testTenantId, admin_url2, admin_token);
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+            return true;
+        }
+
+
+        public Boolean Tear_Down_Create_Endpoints_Test(string admin_url, string admin_token, User u, string testServiceId, string testTenantId)
+        {
+            Boolean ret = true;
+            User.Delete(admin_url, u.id, admin_token);
+            ret |= Delete_Test_Service(testServiceId, admin_url +"/v2.0/", admin_token);
+            ret |= Delete_Test_Tenant(testTenantId, admin_url + "/v2.0/", admin_token);
+            if (ret == true)
+            {
+                endpoint_testServiceid = String.Empty;
+                endpoint_testTenantid = String.Empty;
+            }
+            return ret;
+
+        }
+
+        public Boolean Run_Test_Endpoints(string admin_url, string serviceurl, string public_url, string admin_token, string token, string tenant_id, string service_id, string service_name, string region, int iterationNumber, string EndpointName, Boolean trace, ref string output)
+        {
+            if (Test_Endpoint_List(ref em, token, admin_url, admin_token, iterationNumber))
+            {
+                Endpoint ep = Endpoint.Create_Endpoint(admin_token, token, admin_url, service_id, region, service_id, serviceurl, public_url, tenant_id);
+                if (trace == true)
+                {
+                    output = ep.ToString();
+                }
+            }
+            else
+            {
+                return false;
+            }
+
+            return Test_Endpoint_List(ref em, token, admin_url, admin_token, iterationNumber + 1);
+        }
+
+
+        public bool Test_Endpoint_List(ref EndpointManager em, string token, string admin_url, string admin_token, int iterationNumber)
+        {
+
+            em.List_Endpoints(admin_url, token, admin_token);
+
+            if (em.endpoint_manager_error == null)
+            {
+
+                return em.endpoint_list.Count == iterationNumber;
+            }
+            else
+            {
+                return false;
+            }
+
+
+        }
+
+
+        private bool Delete_Test_Service(string service_id, string admin_url, string admin_token)
+        {
+            try
+            {
+                string delete_url = admin_url + "OS-KSADM/services/" + service_id;
+
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(delete_url);
+
+                webRequest.Method = "DELETE";
+                webRequest.ServicePoint.Expect100Continue = false;
+                webRequest.Headers.Add("X-Auth-Token", admin_token);
+                webRequest.Timeout = 2000;
+
+                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
+                Stream resStream = resp.GetResponseStream();
+                StreamReader reader = new StreamReader(resStream);
+                string ret = reader.ReadToEnd();
+
+                return true;
+
+            }
+            catch (Exception x)
+            {
+
+                throw x;
+            }
+        }
+
+
+        private bool Create_Test_Service(ref string testServiceId, string testServiceName, string admin_url, string admin_token)
+        {
+            String post_data = "{" + "\"OS-KSADM:service\": {" +
+                         "\"type\": \"" + "testing" + "\", " +
+                         "\"description\": \"" + "If still here please Delete" + "\", " +
+                         "\"name\": \"" + testServiceName +
+                         "\"}}";
+
+            try
+            {
+                string create_url = admin_url + "OS-KSADM/services/";
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(create_url);
+                webRequest.Headers.Add("X-Auth-Token", admin_token);
+                webRequest.Method = "POST";
+                webRequest.ServicePoint.Expect100Continue = false;
+                webRequest.Timeout = 2000;
+                webRequest.ContentType = "application/json";
+
+                StreamWriter requestWriter = new StreamWriter(webRequest.GetRequestStream());
+                requestWriter.Write(post_data);
+                requestWriter.Close();
+
+                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
+                Stream resStream = resp.GetResponseStream();
+                StreamReader reader = new StreamReader(resStream);
+                string ret = reader.ReadToEnd();
+                JObject parsed = JObject.Parse(ret);
+                //   MessageBox.Show(parsed.ToString());
+                testServiceId = parsed["OS-KSADM:service"]["id"].ToString();
+
+                return true;
+
+            }
+            catch (Exception x)
+            {
+                return false;
+            }
+
+
+        }
+
+
+        private bool Delete_Test_Tenant(string tenantId, string admin_url, string admin_token)
+        {
+            try
+            {
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants/" + tenantId);
+                webRequest.Headers.Add("X-Auth-Token", admin_token);
+                webRequest.Method = "DELETE";
+                webRequest.ServicePoint.Expect100Continue = false;
+                webRequest.Timeout = 2000;
+                webRequest.ContentType = "application/json";
+
+
+                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
+                Stream resStream = resp.GetResponseStream();
+                StreamReader reader = new StreamReader(resStream);
+
+                return true;
+
+            }
+            catch (Exception x)
+            {
+                throw x;
+            }
+        }
+
+
+        private bool Create_Test_Tenant(ref string testTenantId, string tenantName, string admin_url, string admin_token)
+        {
+            StreamWriter requestWriter;
+            testTenantId = String.Empty;
+
+            string postData = "{" +
+                                "\"tenant\":{" +
+                                            "\"name\":\"" + tenantName + "\", " +
+                                            "\"description\":\"" + "Delete if still present" + "\", " +
+                                            "\"enabled\":" + "true" +
+                                            "}}";
+
+
+            try
+            {
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants");
+                webRequest.Headers.Add("X-Auth-Token", admin_token);
+                webRequest.Method = "POST";
+                webRequest.ServicePoint.Expect100Continue = false;
+                webRequest.Timeout = 2000;
+                webRequest.ContentType = "application/json";
+
+                requestWriter = new StreamWriter(webRequest.GetRequestStream());
+                requestWriter.Write(postData);
+                requestWriter.Close();
+
+                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
+                Stream resStream = resp.GetResponseStream();
+                StreamReader reader = new StreamReader(resStream);
+
+                JObject ret = JObject.Parse(reader.ReadToEnd());
+                // MessageBox.Show(ret.ToString());
+                testTenantId = ret["tenant"]["id"].ToString();
+
+
+                return true;
+            }
+            catch (Exception x)
+            {
+                return false;
+            }
+
+        }
+
+    }
 
 #endregion
 
