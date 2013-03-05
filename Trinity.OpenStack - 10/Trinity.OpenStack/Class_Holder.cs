@@ -1043,8 +1043,6 @@ namespace Trinity.OpenStack
                 JObject root = JObject.Parse(ret);
                 JArray ServerReturn = (JArray)root["endpoints"];
 
-                if (ServerReturn != null)
-                {
 
                     for (int i = 0; i < ServerReturn.Count; i++)
                     {
@@ -1058,23 +1056,19 @@ namespace Trinity.OpenStack
                         {
                             endpoint_manager_error = x;
                         }
-                        
+
                         Endpoint_List.Add(newEndpoint);
                     }
 
 
                     endpoint_list = Endpoint_List;
-                }
-                else
-                {
-                    endpoint_list = new List<Endpoint>();
-                }
 
             }
             catch (Exception x)
             {
-                endpoint_manager_error = x;
+                endpoint_list = new List<Endpoint>();
             }
+     
         }
 
     }
@@ -1702,6 +1696,13 @@ namespace Trinity.OpenStack
 
         public Boolean Tear_Down_Create_Endpoints_Test(string admin_url, string admin_token, User u, string testServiceId, string testTenantId)
         {
+            while (em.endpoint_list.Count > 0)
+            {
+                em.endpoint_list[em.endpoint_list.Count].Delete_Endpoint(admin_url, admin_token);
+            }
+
+
+
             Boolean ret = true;
             User.Delete(admin_url, u.id, admin_token);
             ret |= Delete_Test_Service(testServiceId, admin_url +"/v2.0/", admin_token);
