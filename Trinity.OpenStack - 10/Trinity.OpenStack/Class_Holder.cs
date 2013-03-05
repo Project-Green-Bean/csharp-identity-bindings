@@ -886,7 +886,9 @@ namespace Trinity.OpenStack
             catch (Exception x)
             {
                 // MessageBox.Show("Exception caught: \n" + x.ToString());
-                throw new BadJsonException(); // Change later
+                x.ToString();
+
+                throw new ObjectNotFoundException("Object Not Found; Could not delete"); // Change later
             }
         }
 
@@ -1050,7 +1052,7 @@ namespace Trinity.OpenStack
 
                         try
                         {
-                            Endpoint temporaryObject = Endpoint.Parse(ServerReturn[i].ToString());
+                            newEndpoint = Endpoint.Parse(ServerReturn[i].ToString());
                         }
                         catch (Exception x)
                         {
@@ -1450,6 +1452,16 @@ namespace Trinity.OpenStack
       
     }
 
+    public class ObjectNotFoundException : Exception
+    {
+        public ObjectNotFoundException() : base() { }
+
+        public ObjectNotFoundException(string message) : base(message) { }
+
+        public ObjectNotFoundException(string message, System.Exception inner) : base(message, inner) { }
+
+    }
+
     public class OpenStackException : OpenStackObject
     {
        // private string exception_number;
@@ -1563,10 +1575,10 @@ namespace Trinity.OpenStack
 
 
             }
-            catch (Exception x)
+            catch(Exception x) 
             {
                 // MessageBox.Show("Exception caught: \n" + x.ToString());
-                return x.ToString();
+                throw x;
             }
 
        }
