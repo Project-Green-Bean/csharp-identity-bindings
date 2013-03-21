@@ -1235,6 +1235,68 @@ namespace Trinity.OpenStack
 
     #endregion
 
+    #region Role Manager
+    public class RoleManager : OpenStackObject
+    {
+        public List<Role> role_list;
+        public Exception role_manager_error;
+
+        public RoleManager()
+        {
+            base.Type = "Role Manager";
+        }
+
+        public void List_Roles(string url, string userToken, string AdminToken)
+        {
+            List<Role> Role_List = new List<Role>();
+            string ret = string.Empty;
+            try
+            {
+
+                ret = Role.List(url, AdminToken);
+
+                JObject root = JObject.Parse(ret);
+                JArray ServerReturn = (JArray)root["roles"];
+
+                if (ServerReturn != null)
+                {
+
+                    for (int i = 0; i < ServerReturn.Count; i++)
+                    {
+                        Role newRole = new Role();
+
+                        try
+                        {
+                            newRole = Role.Parse(ServerReturn[i].ToString());
+                        }
+                        catch (Exception x)
+                        {
+                            role_manager_error = x;
+                            throw x;
+                        }
+
+                        Role_List.Add(newRole);
+                    }
+
+
+                    role_list = Role_List;
+                }
+                else
+                {
+                    role_list = new List<Role>();
+                }
+
+            }
+            catch (Exception x)
+            {
+                throw x;
+            }
+
+        }
+
+    }
+    #endregion
+
     #region Service Methods
     //------------------------------------------------
     // by Arnold Yang
@@ -1685,20 +1747,22 @@ namespace Trinity.OpenStack
 
 #region Test Functions
 
-    public class OpenStackTests
+    public class TestCreateEndpoint
     {
         public string endpoint_testTenantid = String.Empty;
         public string endpoint_testServiceid = String.Empty;
         public User endpoint_testUser = new User();
         public EndpointManager em = new EndpointManager();
         public Token EPTestToken;
-
+        protected List<Endpoint> DisposableEndpoints;
+        protected int BaseCount = 0;
 
         public Boolean Set_Up_Create_Endpoints_Test(string admin_url, string admin_token, string testTenantName, string testServiceName)
         {
             Boolean ret = true;
             string admin_url2 = admin_url + "/v2.0/";
 
+            DisposableEndpoints = new List<Endpoint>();
             string testTenantId = String.Empty;
             string testUserName = "EndpointsTestUser";
             string testUserPw = "eptu123";
@@ -1718,6 +1782,8 @@ namespace Trinity.OpenStack
                         if (EPTestToken.token_error.Equals(String.Empty))
                         {
                             em = new EndpointManager();
+                            em.List_Endpoints(admin_url, admin_token, admin_token);
+                            BaseCount = em.endpoint_list.Count;
                             return true;
                         }
                         else
@@ -1752,9 +1818,10 @@ namespace Trinity.OpenStack
         {
             try
             {
-                while (em.endpoint_list.Count > 0)
+                while (DisposableEndpoints.Count>0)
                 {
-                    em.endpoint_list[em.endpoint_list.Count].Delete_Endpoint(admin_url, admin_token);
+                    DisposableEndpoints[0].Delete_Endpoint(admin_url, admin_token);
+                    DisposableEndpoints.RemoveAt(0);
                 }
             }
             catch
@@ -1778,9 +1845,10 @@ namespace Trinity.OpenStack
 
         public Boolean Run_Test_Endpoints(string admin_url, string serviceurl, string public_url, string admin_token, string token, string tenant_id, string service_id, string service_name, string region, int iterationNumber, string EndpointName, Boolean trace, ref string output)
         {
-            if (Test_Endpoint_List(ref em, token, admin_url, admin_token, iterationNumber))
+            if (Test_Endpoint_List(ref em, admin_token, admin_url, admin_token, iterationNumber))
             {
-                Endpoint ep = Endpoint.Create_Endpoint(admin_token, token, admin_url, service_id, region + iterationNumber, service_id, serviceurl, public_url, tenant_id);
+               Endpoint ep = Endpoint.Create_Endpoint(admin_token, admin_token, admin_url, service_id, region + iterationNumber, service_id, serviceurl, public_url, tenant_id);
+               DisposableEndpoints.Add(ep);
                 if (trace == true)
                 {
                     output = ep.ToString();
@@ -1791,19 +1859,19 @@ namespace Trinity.OpenStack
                 return false;
             }
 
-            return Test_Endpoint_List(ref em, token, admin_url, admin_token, iterationNumber + 1);
+            return Test_Endpoint_List(ref em, admin_token, admin_url, admin_token, iterationNumber + 1);
         }
 
 
         public bool Test_Endpoint_List(ref EndpointManager em, string token, string admin_url, string admin_token, int iterationNumber)
         {
 
-            em.List_Endpoints(admin_url, token, admin_token);
+            em.List_Endpoints(admin_url, admin_token, admin_token);
 
             if (em.endpoint_manager_error == null)
             {
 
-                return em.endpoint_list.Count == iterationNumber;
+                return em.endpoint_list.Count == (iterationNumber + BaseCount);
             }
             else
             {
