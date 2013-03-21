@@ -18,7 +18,7 @@ namespace Trinity.OpenStack
 {
 
 
-    #region Token Class            
+    #region Token Class
     //=======================================================================================//
     //--                                 WebRequestToken  - Post                           --//
     //---------------------------------------------------------------------------------------//
@@ -30,19 +30,19 @@ namespace Trinity.OpenStack
     //--        Date : 9/25/2012                                  Language : VS 2012 C#    --//
     //=======================================================================================//
     public class Token
-    {    
+    {
         //------------------------ Class Attributes ------------------------------------------//
-            public string token_id;
-            public string token_expiration;
-            public string user_id;
-            public string user_name;
-            public string user_username;
-            public string user_roles;
-            public string user_roles_links;
-            public string SC_name;
-            public string SC_type;
-            public string SC_endpoints;
-            public string token_error;
+        public string token_id;
+        public string token_expiration;
+        public string user_id;
+        public string user_name;
+        public string user_username;
+        public string user_roles;
+        public string user_roles_links;
+        public string SC_name;
+        public string SC_type;
+        public string SC_endpoints;
+        public string token_error;
 
         //------------------------ Class Methods ----------------------------------------------//
 
@@ -120,7 +120,7 @@ namespace Trinity.OpenStack
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                
+
 
                 return ret;
             }
@@ -173,7 +173,7 @@ namespace Trinity.OpenStack
                 _token.user_roles = strUserRoles;
                 _token.user_username = strUser_UserName;
                 _token.token_error = "";
-                
+
 
                 /*switch (item_choice)
                 {
@@ -194,23 +194,23 @@ namespace Trinity.OpenStack
             }
             catch
             {
-                 _token.token_error = "Token.Parse method failed.";           
+                _token.token_error = "Token.Parse method failed.";
                 return _token;
             }
- 
-         } // end parse method 
-  
-    //=======================================================================================//
-    //--                                 Request with tenantID                             --//
-    //---------------------------------------------------------------------------------------//
-    //--                                                                                   --//
-    //--  Purpose : Send a Post request to the Keystone Service and recieved back a        --//
-    //--            json string containing an access token                                 --//
-    //--                                                                                   --//
-    //--  Written By : Dr. Ed Boland                      Operating System : Windows 7     --//
-    //--        Date : 9/25/2012                                  Language : VS 2012 C#    --//
-    //=======================================================================================//
-  
+
+        } // end parse method 
+
+        //=======================================================================================//
+        //--                                 Request with tenantID                             --//
+        //---------------------------------------------------------------------------------------//
+        //--                                                                                   --//
+        //--  Purpose : Send a Post request to the Keystone Service and recieved back a        --//
+        //--            json string containing an access token                                 --//
+        //--                                                                                   --//
+        //--  Written By : Dr. Ed Boland                      Operating System : Windows 7     --//
+        //--        Date : 9/25/2012                                  Language : VS 2012 C#    --//
+        //=======================================================================================//
+
         public static Token Request_WithTenantID(string _url, string username, string password, string tenant)
         {
             string request_url = _url + "/v2.0/tokens";
@@ -218,7 +218,7 @@ namespace Trinity.OpenStack
 
             try
             {
-                string ret = string.Empty;                
+                string ret = string.Empty;
 
                 String catalogData = "{\"auth\":{\"passwordCredentials\":{\"username\": \"" + username +
                                             "\", \"password\": \"" + password + "\"},\"tenantName\":\"" + tenant + "\"}}";
@@ -245,7 +245,7 @@ namespace Trinity.OpenStack
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                
+
                 _retrieved_token = Token.Parse(ret);
 
                 return _retrieved_token;
@@ -256,11 +256,11 @@ namespace Trinity.OpenStack
             {
                 _retrieved_token.token_error = "Request_WithTenantID failed";
                 return _retrieved_token;
-            }    
-    }
+            }
+        }
 
-  } // end class
-    #endregion  
+    } // end class
+    #endregion
 
     #region API_Info Class
     public class API_Info
@@ -268,7 +268,7 @@ namespace Trinity.OpenStack
         public static string Get(string url)
         {
             string ret = string.Empty;
-            
+
             try
             {
                 HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
@@ -290,7 +290,7 @@ namespace Trinity.OpenStack
             }
         } // end Get method
     } //end API_Info class
-#endregion
+    #endregion
 
     #region Tenants
     public class Tenants
@@ -339,12 +339,12 @@ namespace Trinity.OpenStack
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                 return ret;
+                return ret;
 
             }
             catch (Exception x)
             {
-               return  x.ToString();
+                return x.ToString();
             }
 
         }
@@ -381,17 +381,17 @@ namespace Trinity.OpenStack
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                 return ret;
+                return ret;
             }
             catch (Exception x)
             {
-               return x.ToString();
+                return x.ToString();
             }
         }
 
         public string Delete_Tenant(string adminUrl, string User_Token, string tenantId)
         {
-         
+
             string ret = string.Empty;
 
             try
@@ -413,7 +413,7 @@ namespace Trinity.OpenStack
             }
             catch (Exception x)
             {
-               return x.ToString();
+                return x.ToString();
             }
         }
 
@@ -452,7 +452,7 @@ namespace Trinity.OpenStack
             }
             catch (Exception x)
             {
-              return x.ToString();
+                return x.ToString();
             }
         }
     }
@@ -471,6 +471,7 @@ namespace Trinity.OpenStack
         public string tenantid;
         public string enabled;
         public string password = "";
+        public string error;
 
         #endregion
 
@@ -480,73 +481,73 @@ namespace Trinity.OpenStack
         //
         //
         //==============================================================================//
-        public static User Add(string url, string name, string password, string enabled, string tenantId, 
-                                             string email,  string admin_token)
+        public static User Add(string url, string name, string password, string enabled, string tenantId,
+                                             string email, string admin_token)
+        {
+
+            User return_user = new User();
+            string ret = string.Empty;
+
+            StreamWriter requestWriter;
+
+            String postData = "{" +
+                                "\"user\": {" +
+                                            "\"name\": \"" + name + "\", " +
+                                            "\"password\": \"" + password + "\"," +
+                                            "\"email\": \"" + email + "\"," +
+                                            "\"tenantId\": \"" + tenantId + "\"," +
+                                            "\"enabled\": " + enabled +
+                                            "}}";
+            try
             {
-                
-                User return_user = new User();
-                string ret = string.Empty;
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
+                webRequest.Headers.Add("X-Auth-Token", admin_token);
+                webRequest.Method = "POST";
+                webRequest.ServicePoint.Expect100Continue = false;
+                webRequest.Timeout = 2000;
+                webRequest.ContentType = "application/json";
 
-                StreamWriter requestWriter;
+                requestWriter = new StreamWriter(webRequest.GetRequestStream());
+                requestWriter.Write(postData);
+                requestWriter.Close();
 
-                String postData = "{" +
-                                    "\"user\": {" +
-                                                "\"name\": \"" + name + "\", " +
-                                                "\"password\": \"" + password + "\"," +
-                                                "\"email\": \"" + email + "\"," +
-                                                "\"tenantId\": \"" + tenantId + "\"," +
-                                                "\"enabled\": " + enabled +
-                                                "}}";
-                    try
-                {
-                    HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
-                    webRequest.Headers.Add("X-Auth-Token", admin_token);
-                    webRequest.Method = "POST";
-                    webRequest.ServicePoint.Expect100Continue = false;
-                    webRequest.Timeout = 2000;
-                    webRequest.ContentType = "application/json";
+                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
+                Stream resStream = resp.GetResponseStream();
+                StreamReader reader = new StreamReader(resStream);
+                ret = reader.ReadToEnd();
 
-                    requestWriter = new StreamWriter(webRequest.GetRequestStream());
-                    requestWriter.Write(postData);
-                    requestWriter.Close();
+                //parse server return ------------------------------------
+                JObject oServerReturn = JObject.Parse(ret);
+                String userStr = oServerReturn["user"].ToString();
 
-                    HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
-                    Stream resStream = resp.GetResponseStream();
-                    StreamReader reader = new StreamReader(resStream);
-                    ret = reader.ReadToEnd();
+                JObject oUserString = JObject.Parse(userStr);
+                String user_name = oUserString["name"].ToString();
+                String user_email = oUserString["email"].ToString();
+                String user_tenantid = oUserString["tenantId"].ToString();
+                String user_id = oUserString["id"].ToString();
+                String user_enabled = oUserString["enabled"].ToString();
+                String user_password = oUserString["password"].ToString();
 
-                    //parse server return ------------------------------------
-                    JObject oServerReturn = JObject.Parse(ret);
-                    String userStr = oServerReturn["user"].ToString();
+                return_user.name = user_name;
+                return_user.email = user_email;
+                return_user.tenantid = user_tenantid;
+                return_user.id = user_id;
+                return_user.enabled = user_enabled;
+                return_user.password = user_password;
+                //--------------------------------------------------------
 
-                    JObject oUserString = JObject.Parse(userStr);
-                    String user_name = oUserString["name"].ToString();
-                    String user_email = oUserString["email"].ToString();
-                    String user_tenantid = oUserString["tenantId"].ToString();
-                    String user_id = oUserString["id"].ToString();
-                    String user_enabled = oUserString["enabled"].ToString();
-                    String user_password = oUserString["password"].ToString();
-
-                    return_user.name = user_name;
-                    return_user.email = user_email;
-                    return_user.tenantid = user_tenantid;
-                    return_user.id = user_id;
-                    return_user.enabled = user_enabled;
-                    return_user.password = user_password;
-                    //--------------------------------------------------------
-
-                    return (return_user);
+                return (return_user);
 
 
-                }
-                catch (Exception x)
-                {
-                    return_user.name = x.ToString();
-                    return (return_user);
-                }
             }
-        
-        
+            catch (Exception x)
+            {
+                return_user.name = x.ToString();
+                return (return_user);
+            }
+        }
+
+
 
         //==============================================================================//
         //
@@ -554,34 +555,34 @@ namespace Trinity.OpenStack
         //
         //
         //==============================================================================//
-        
+
         public static string Delete(string url, string user_id, string admin_token)
+        {
+            string ret = string.Empty;
+            try
             {
-                string ret = string.Empty;
-                try
-                {
-                    string delete_url = url + "/v2.0/users/" + user_id;
-                    
-                    HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(delete_url);
+                string delete_url = url + "/v2.0/users/" + user_id;
 
-                    webRequest.Method = "DELETE";
-                    webRequest.ServicePoint.Expect100Continue = false;
-                    webRequest.Headers.Add("X-Auth-Token", admin_token);
-                    webRequest.Timeout = 2000;
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(delete_url);
 
-                    HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
-                    Stream resStream = resp.GetResponseStream();
-                    StreamReader reader = new StreamReader(resStream);
-                    ret = reader.ReadToEnd();
+                webRequest.Method = "DELETE";
+                webRequest.ServicePoint.Expect100Continue = false;
+                webRequest.Headers.Add("X-Auth-Token", admin_token);
+                webRequest.Timeout = 2000;
 
-                    return "User was successfully deleted.";
+                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
+                Stream resStream = resp.GetResponseStream();
+                StreamReader reader = new StreamReader(resStream);
+                ret = reader.ReadToEnd();
 
-                }
-                catch (Exception x)
-                {
-                    return ("Exception caught: \n" + x.ToString());
-                } 
+                return "User was successfully deleted.";
+
             }
+            catch (Exception x)
+            {
+                return ("Exception caught: \n" + x.ToString());
+            }
+        }
 
         //==============================================================================//
         //
@@ -590,8 +591,8 @@ namespace Trinity.OpenStack
         //
         //==============================================================================//
 
-        public static string Update(string admin_token,string NewID, string UserName, string Email,
-                                                string Enabled, string TenantID, string url )
+        public static string Update(string admin_token, string NewID, string UserName, string Email,
+                                                string Enabled, string TenantID, string url)
         {
             string ret = string.Empty;
             User parsed_user = new User();
@@ -628,22 +629,22 @@ namespace Trinity.OpenStack
 
                 parsed_user = User.Parse(ret);
 
-                return(ret);
+                return (ret);
             }
             catch (Exception x)
             {
-                return("Update failed: " + x.ToString());
-                
+                return ("Update failed: " + x.ToString());
+
             }
         }
-        
+
         //==============================================================================//
         //
         //                              List Users
         //
         //
         //==============================================================================//
-        
+
         public static string List(string url, string User_Token)
         {
 
@@ -686,7 +687,7 @@ namespace Trinity.OpenStack
         public static string List_User_Roles(string url, string UserId, string TenantId, string AdminId)
         {
 
-            string List_User_Roles_url = url + "/v2.0/tenants/" + TenantId + "/users/" + UserId + "/roles"; 
+            string List_User_Roles_url = url + "/v2.0/tenants/" + TenantId + "/users/" + UserId + "/roles";
             string ret = string.Empty;
             try
             {
@@ -711,7 +712,7 @@ namespace Trinity.OpenStack
             catch (Exception x)
             {
                 return (" Exception caught." + x.ToString());
-            }  
+            }
         }
 
         //==============================================================================//
@@ -720,18 +721,18 @@ namespace Trinity.OpenStack
         //
         //
         //==============================================================================//
-        public static User Get_User_ID(string url, string AdminID)
+        public static User Get(string url, string userID, string admin_token)
         {
+            string ret = string.Empty;
             User return_user = new User();
 
-            string ret = string.Empty;
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + "/v2.0/users/" + userID);
 
                 webRequest.Method = "GET";
                 webRequest.ServicePoint.Expect100Continue = false;
-                webRequest.Headers.Add("X-Auth-Token", AdminID);
+                webRequest.Headers.Add("X-Auth-Token", admin_token);
                 webRequest.Timeout = 2000;
 
                 HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
@@ -739,13 +740,13 @@ namespace Trinity.OpenStack
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                return_user = User.Parse(ret); 
+                return_user = Parse(ret);
 
                 return return_user;
             }
             catch (Exception x)
             {
-                return_user.enabled = x.ToString();
+                return_user.error = x.ToString();
                 return return_user;
             }
         }
@@ -758,10 +759,10 @@ namespace Trinity.OpenStack
         //==============================================================================//
         public static string Add_Role_To_User(string url, string UserId, string TenantId, string RoleId, string Admin_Token)
         {
-            string Add_Role_url = url + "/v2.0/tenants/" + TenantId+ "/users/" + UserId +
+            string Add_Role_url = url + "/v2.0/tenants/" + TenantId + "/users/" + UserId +
                                 "/roles/OS-KSADM/" + RoleId;
             string ret = string.Empty;
-            
+
             try
             {
                 HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Add_Role_url);
@@ -791,31 +792,31 @@ namespace Trinity.OpenStack
         //
         //==============================================================================//
         public static string Delete_Role_Of_User(string url, string UserId, string TenantId, string RoleId, string Admin_Token)
+        {
+            string Remove_Role_url = url + "/v2.0/tenants/" + TenantId + "/users/" + UserId +
+                            "/roles/OS-KSADM/" + RoleId;
+            string ret = string.Empty;
+
+            try
             {
-                string Remove_Role_url = url + "/v2.0/tenants/" + TenantId + "/users/" + UserId +
-                                "/roles/OS-KSADM/" + RoleId;
-                string ret = string.Empty;
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Remove_Role_url);
+                webRequest.Headers.Add("X-Auth-Token", Admin_Token);
+                webRequest.Method = "DELETE";
+                webRequest.ServicePoint.Expect100Continue = false;
+                webRequest.Timeout = 2000;
+                webRequest.ContentType = "application/json";
 
-                try
-                {
-                    HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(Remove_Role_url);
-                    webRequest.Headers.Add("X-Auth-Token", Admin_Token);
-                    webRequest.Method = "DELETE";
-                    webRequest.ServicePoint.Expect100Continue = false;
-                    webRequest.Timeout = 2000;
-                    webRequest.ContentType = "application/json";
-
-                    HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
-                    Stream resStream = resp.GetResponseStream();
-                    StreamReader reader = new StreamReader(resStream);
-                    ret = reader.ReadToEnd();
-                    return ret;
-                }
-                catch (Exception x)
-                {
-                    return ("Exception caught: \n" + x.ToString());
-                }
+                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
+                Stream resStream = resp.GetResponseStream();
+                StreamReader reader = new StreamReader(resStream);
+                ret = reader.ReadToEnd();
+                return ret;
             }
+            catch (Exception x)
+            {
+                return ("Exception caught: \n" + x.ToString());
+            }
+        }
 
         public static User Parse(string server_return)
         {
@@ -845,14 +846,75 @@ namespace Trinity.OpenStack
             catch
             {
                 return null;
-            }           
+            }
         }  //end parse method
 
     } //end class
 
-#endregion
+    #endregion
 
-  
+    #region User Manager
+    public class UserManager : OpenStackObject
+    {
+        public List<User> user_list;
+        public Exception user_manager_error;
+
+        public UserManager()
+        {
+            base.Type = "User Manager";
+        }
+
+        public void List_User(string url, string userToken, string AdminToken)
+        {
+            List<User> User_List = new List<User>();
+            string ret = string.Empty;
+            try
+            {
+
+                ret = User.List(url, AdminToken);
+
+                JObject root = JObject.Parse(ret);
+                JArray ServerReturn = (JArray)root["users"];
+
+                if (ServerReturn != null)
+                {
+
+                    for (int i = 0; i < ServerReturn.Count; i++)
+                    {
+                        User newRole = new User();
+
+                        try
+                        {
+                            newRole = User.Parse(ServerReturn[i].ToString());
+                        }
+                        catch (Exception x)
+                        {
+                            user_manager_error = x;
+                            throw x;
+                        }
+
+                        User_List.Add(newRole);
+                    }
+
+
+                    user_list = User_List;
+                }
+                else
+                {
+                    user_list = new List<User>();
+                }
+
+            }
+            catch (Exception x)
+            {
+                throw x;
+            }
+
+        }
+
+    }
+    #endregion
+
     #region Endpoints
     public class Endpoint : OpenStackObject
     {
@@ -871,7 +933,7 @@ namespace Trinity.OpenStack
         {
             base.Type = "Endpoint";
         }
-        
+
 
         public Boolean Delete_Endpoint(string url, string adminToken)
         {
@@ -969,14 +1031,14 @@ namespace Trinity.OpenStack
                     _endpoint.region = regionStr;
 
                     _endpoint.id = idStr;
-                 //   _endpoint.type = typeStr;
+                    //   _endpoint.type = typeStr;
                     _endpoint.endpoint_error = "";
 
                     return _endpoint;
                 }
                 catch
                 {
-                     throw new BadJsonException("Json command contained incorrect fields");
+                    throw new BadJsonException("Json command contained incorrect fields");
                 }
             }
         }
@@ -991,14 +1053,14 @@ namespace Trinity.OpenStack
                                             "\"name\": \"" + service_name + "\", " +
                                             "\"region\": \"" + region + "\", " +
                                             "\"service_id\": \"" + service_id + "\"," +
-                                            "\"publicurl\": \"" + public_url  + "/v2.0/" + tenant_id + "\"," +
+                                            "\"publicurl\": \"" + public_url + "/v2.0/" + tenant_id + "\"," +
                                             "\"adminurl\": \"" + admin_url + "/v2.0/" + tenant_id + "\"," +
                                             "\"internalurl\": \"" + internal_url + "/v2.0/" + tenant_id + "\" }}";
 
-            
+
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create( admin_url + "/v2.0/endpoints");
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "/v2.0/endpoints");
                 webRequest.Headers.Add("X-Auth-Token", admin_token_id);
                 webRequest.Method = "POST";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -1024,22 +1086,23 @@ namespace Trinity.OpenStack
 
                 return Endpoint.Parse(ret);
             }
-            catch(Exception x)
+            catch (Exception x)
             {
                 throw x;
             }
         }
-}
-    
-#endregion
+    }
 
-#region Endpoint Manager
+    #endregion
+
+    #region Endpoint Manager
     public class EndpointManager : OpenStackObject
     {
         public List<Endpoint> endpoint_list;
         public Exception endpoint_manager_error;
 
-        public EndpointManager() {
+        public EndpointManager()
+        {
             base.Type = "Endpoint Manager";
         }
 
@@ -1056,35 +1119,35 @@ namespace Trinity.OpenStack
                 JArray ServerReturn = (JArray)root["endpoints"];
 
 
-                    for (int i = 0; i < ServerReturn.Count; i++)
+                for (int i = 0; i < ServerReturn.Count; i++)
+                {
+                    Endpoint newEndpoint = new Endpoint();
+
+                    try
                     {
-                        Endpoint newEndpoint = new Endpoint();
-
-                        try
-                        {
-                            newEndpoint = Endpoint.Parse(ServerReturn[i].ToString());
-                        }
-                        catch (Exception x)
-                        {
-                            endpoint_manager_error = x;
-                        }
-
-                        Endpoint_List.Add(newEndpoint);
+                        newEndpoint = Endpoint.Parse(ServerReturn[i].ToString());
+                    }
+                    catch (Exception x)
+                    {
+                        endpoint_manager_error = x;
                     }
 
+                    Endpoint_List.Add(newEndpoint);
+                }
 
-                    endpoint_list = Endpoint_List;
+
+                endpoint_list = Endpoint_List;
 
             }
             catch (Exception x)
             {
                 endpoint_list = new List<Endpoint>();
             }
-     
+
         }
 
     }
-#endregion
+    #endregion
 
 
     #region Roles
@@ -1554,12 +1617,12 @@ namespace Trinity.OpenStack
 
     public class BadJsonException : Exception
     {
-        public BadJsonException () : base() { }
+        public BadJsonException() : base() { }
 
         public BadJsonException(string message) : base(message) { }
 
         public BadJsonException(string message, System.Exception inner) : base(message, inner) { }
-      
+
     }
 
     public class ObjectNotFoundException : Exception
@@ -1574,7 +1637,7 @@ namespace Trinity.OpenStack
 
     public class OpenStackException : OpenStackObject
     {
-       // private string exception_number;
+        // private string exception_number;
         private string exception_description;
 
         public OpenStackException()
@@ -1582,7 +1645,7 @@ namespace Trinity.OpenStack
             base.Type = "Exception";
         }
 
-       // private Exception exception;
+        // private Exception exception;
 
         public override string ToString()
         {
@@ -1596,18 +1659,18 @@ namespace Trinity.OpenStack
             try
             {
 
-                string[] exceptioninfo  = exceptionMessage.ToString().Split(':');
+                string[] exceptioninfo = exceptionMessage.ToString().Split(':');
                 //ex.exception_number = exceptioninfo[0];
                 ex.exception_description = exceptionMessage;
 
-          //      ex.exception = exceptionMessage;
+                //      ex.exception = exceptionMessage;
             }
             catch
             {
-               // ex.exception_number = "-";
+                // ex.exception_number = "-";
                 ex.exception_description = "OpenStack Library error";
 
-        //        ex.exception = exceptionMessage;
+                //        ex.exception = exceptionMessage;
             }
 
             return ex;
@@ -1632,7 +1695,7 @@ namespace Trinity.OpenStack
             set { object_type = value; }
         }
 
-       protected string POST(string User_Token, string url, string postData)
+        protected string POST(string User_Token, string url, string postData)
         {
             string ret = string.Empty;
             StreamWriter requestWriter;
@@ -1662,9 +1725,9 @@ namespace Trinity.OpenStack
             }
         }
 
-       protected string DELETE(string User_Token, string url, string id)
-       {
-           
+        protected string DELETE(string User_Token, string url, string id)
+        {
+
             string ret = string.Empty;
             try
             {
@@ -1685,44 +1748,44 @@ namespace Trinity.OpenStack
 
 
             }
-            catch(Exception x) 
+            catch (Exception x)
             {
                 // MessageBox.Show("Exception caught: \n" + x.ToString());
                 throw x;
             }
 
-       }
+        }
 
 
-       protected string GET(string User_Token, string url)
-       {
-           HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
-           string ret;
+        protected string GET(string User_Token, string url)
+        {
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
+            string ret;
 
-           try
-           {
-               webRequest.Method = "GET";
-               webRequest.ServicePoint.Expect100Continue = false;
-               webRequest.Headers.Add("X-Auth-Token", User_Token);
-               webRequest.Timeout = 2000;
+            try
+            {
+                webRequest.Method = "GET";
+                webRequest.ServicePoint.Expect100Continue = false;
+                webRequest.Headers.Add("X-Auth-Token", User_Token);
+                webRequest.Timeout = 2000;
 
-               HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
-               Stream resStream = resp.GetResponseStream();
-               StreamReader reader = new StreamReader(resStream);
-               ret = reader.ReadToEnd();
-               return ret;
-           }
-           catch (Exception x)
-           {
-             //  OpenStackException.MakeString(x);
-               return x.ToString();
-           }
-       }
+                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
+                Stream resStream = resp.GetResponseStream();
+                StreamReader reader = new StreamReader(resStream);
+                ret = reader.ReadToEnd();
+                return ret;
+            }
+            catch (Exception x)
+            {
+                //  OpenStackException.MakeString(x);
+                return x.ToString();
+            }
+        }
     }
 
     #endregion
 
-#region "Deleted Object"
+    #region "Deleted Object"
     public class DeletedObject : OpenStackObject
     {
         private string message;
@@ -1743,9 +1806,9 @@ namespace Trinity.OpenStack
     }
 
 
-#endregion
+    #endregion
 
-#region Test Functions
+    #region Test Functions
 
     public class TestCreateEndpoint
     {
@@ -1818,7 +1881,7 @@ namespace Trinity.OpenStack
         {
             try
             {
-                while (DisposableEndpoints.Count>0)
+                while (DisposableEndpoints.Count > 0)
                 {
                     DisposableEndpoints[0].Delete_Endpoint(admin_url, admin_token);
                     DisposableEndpoints.RemoveAt(0);
@@ -1832,7 +1895,7 @@ namespace Trinity.OpenStack
 
             Boolean ret = true;
             User.Delete(admin_url, u.id, admin_token);
-            ret |= Delete_Test_Service(testServiceId, admin_url +"/v2.0/", admin_token);
+            ret |= Delete_Test_Service(testServiceId, admin_url + "/v2.0/", admin_token);
             ret |= Delete_Test_Tenant(testTenantId, admin_url + "/v2.0/", admin_token);
             if (ret == true)
             {
@@ -1847,8 +1910,8 @@ namespace Trinity.OpenStack
         {
             if (Test_Endpoint_List(ref em, admin_token, admin_url, admin_token, iterationNumber))
             {
-               Endpoint ep = Endpoint.Create_Endpoint(admin_token, admin_token, admin_url, service_id, region + iterationNumber, service_id, serviceurl, public_url, tenant_id);
-               DisposableEndpoints.Add(ep);
+                Endpoint ep = Endpoint.Create_Endpoint(admin_token, admin_token, admin_url, service_id, region + iterationNumber, service_id, serviceurl, public_url, tenant_id);
+                DisposableEndpoints.Add(ep);
                 if (trace == true)
                 {
                     output = ep.ToString();
@@ -2025,6 +2088,6 @@ namespace Trinity.OpenStack
 
     }
 
-#endregion
+    #endregion
 
 } // end Trinity.OpenStack Namespace
