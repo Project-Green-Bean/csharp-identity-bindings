@@ -913,7 +913,13 @@ namespace Trinity.OpenStack
             try
             {
                 JObject oServerReturn = JObject.Parse(string_to_parse);
-                String nameStr = oServerReturn["name"].ToString();
+                try
+                {
+                    String nameStr = oServerReturn["name"].ToString();
+                    _endpoint.name = nameStr;
+                }
+                catch
+                { }
 
                 String adminURLStr = oServerReturn["adminURL"].ToString();
                 String internalURL = oServerReturn["internalURL"].ToString();
@@ -928,7 +934,7 @@ namespace Trinity.OpenStack
                 _endpoint.internal_url = internalURL;
                 _endpoint.public_url = publicURLStr;
                 _endpoint.region = regionStr;
-                _endpoint.name = nameStr;
+
                 _endpoint.id = idStr;
                 _endpoint.endpoint_type = typeStr;
                 _endpoint.endpoint_error = "";
@@ -940,7 +946,13 @@ namespace Trinity.OpenStack
                 try
                 {
                     JObject oServerReturn = JObject.Parse(string_to_parse);
-                    String nameStr = oServerReturn["endpoint"]["name"].ToString();
+                    try
+                    {
+                        String nameStr = oServerReturn["name"].ToString();
+                        _endpoint.name = nameStr;
+                    }
+                    catch
+                    { }
 
                     String adminURLStr = oServerReturn["endpoint"]["adminurl"].ToString();
                     String internalURL = oServerReturn["endpoint"]["internalurl"].ToString();
@@ -955,7 +967,7 @@ namespace Trinity.OpenStack
                     _endpoint.internal_url = internalURL;
                     _endpoint.public_url = publicURLStr;
                     _endpoint.region = regionStr;
-                    _endpoint.name = nameStr;
+
                     _endpoint.id = idStr;
                  //   _endpoint.type = typeStr;
                     _endpoint.endpoint_error = "";
@@ -1038,13 +1050,11 @@ namespace Trinity.OpenStack
             try
             {
 
-                ret = base.GET(AdminToken, url + "/tokens/" + userToken + "/endpoints");
+                ret = base.GET(AdminToken, url + "/v2.0/tokens/" + userToken + "/endpoints");
 
                 JObject root = JObject.Parse(ret);
                 JArray ServerReturn = (JArray)root["endpoints"];
 
-                if (ServerReturn != null)
-                {
 
                     for (int i = 0; i < ServerReturn.Count; i++)
                     {
@@ -1057,7 +1067,6 @@ namespace Trinity.OpenStack
                         catch (Exception x)
                         {
                             endpoint_manager_error = x;
-                            throw x;
                         }
 
                         Endpoint_List.Add(newEndpoint);
@@ -1065,23 +1074,18 @@ namespace Trinity.OpenStack
 
 
                     endpoint_list = Endpoint_List;
-                }
-                else
-                {
-                    endpoint_list = new List<Endpoint>();
-                }
 
             }
             catch (Exception x)
             {
-                throw x;
+                endpoint_list = new List<Endpoint>();
             }
      
         }
 
     }
 #endregion
-    
+
 
     #region Roles
     public class Role
@@ -1234,7 +1238,7 @@ namespace Trinity.OpenStack
     #region Service Methods
     //------------------------------------------------
     // by Arnold Yang
-    // last updatd on 3:47 PM 6 Dec 2012
+    // last updated on 3:25 PM 22 Jan 2013
     //------------------------------------------------
 
     public class Service
@@ -1256,6 +1260,19 @@ namespace Trinity.OpenStack
         // Service - Create
         // Add service to service catalog
         // Method: POST
+        /// <summary>
+        /// Creates a new user-define service by making a POST call.
+        /// </summary>
+        /// <param name=”url”> The url is the OpenStack server address. </param>
+        /// <param name=”name”> The name of the new service to create. </param>
+        /// <param name=”service_type”> The type of the service to create. </param>
+        /// <param name=”description”> The description of the service to create. </param>
+        /// <param name=”admin_token”> The admin’s token ID. </param>
+        /// <returns> If successful, returns the response from Keystone, which is a 
+        /// json string that includes the new ID, type, name, and description of the 
+        /// newly created service. If unsuccessful, returns an error message 
+        /// as a string. </returns>
+        /// Function approved by: David Nikaido & Kendall Bailey
         //------------------------------------------------
         public static string Create(string url, string name, string service_type, string description,
                                             string admin_token)
@@ -1329,6 +1346,15 @@ namespace Trinity.OpenStack
         // Service - Delete
         // Delete service from service catalog
         // Method: DELETE
+        /// <summary>
+        /// Deletes the user-specified service by making a DELETE call.
+        /// </summary>
+        /// <param name=”url”> The url is the OpenStack server address. </param>
+        /// <param name=”service_id”> The id of the service to be deleted. </param>
+        /// <param name=”admin_token”> The admin’s token ID. </param>
+        /// <returns> If successful, returns “Service was successfully deleted.”
+        /// If unsuccessful, returns an error message as a string. </returns>
+        /// Function approved by: David Nikaido & Kendall Bailey
         //------------------------------------------------
         public static string Delete(string url, string service_id, string admin_token)
         {
@@ -1363,6 +1389,17 @@ namespace Trinity.OpenStack
         // Service - Get
         // Display service from service catalog
         // GET
+        /// <summary>
+        /// Gets the user-specified service with a GET call.
+        /// </summary>
+        /// <param name=”url”> The url is the OpenStack server address. </param>
+        /// <param name=”service_id”> The id of the service to be retrieved. </param>
+        /// <param name=”admin_token”> The admin’s token ID. </param>
+        /// <returns> If successful, returns the response from Keystone, 
+        /// which is a json string that includes the ID, type, name, and 
+        /// description of the user-specified service. If unsuccessful, 
+        /// returns an error message as a string. </returns>
+        /// Function approved by: David Nikaido & Kendall Bailey
         //------------------------------------------------
         public static string Get(string url, string service_id, string admin_token)
         {
@@ -1401,8 +1438,18 @@ namespace Trinity.OpenStack
         // Service - List
         // List all services in service catalog
         // GET
+        /// <summary>
+        /// Lists all the services associated with the admin token with a GET call.
+        /// </summary>
+        /// <param name=”url”> The url is the OpenStack server address. </param>
+        /// <param name=”admin_token”> The admin’s token ID. </param>
+        /// <returns> If successful, returns the response from Keystone, 
+        /// which is a json string that lists all the services associated 
+        /// with the admin’s token as well as the ID, type, name, and description 
+        /// of each of the services. If unsuccessful, returns an error message as a string. </returns>
+        /// Function approved by: David Nikaido & Kendall Bailey
         //------------------------------------------------
-        public string List(string url, string admin_token)
+        public static string List(string url, string admin_token)
         {
             string ret = "";
 
@@ -1440,19 +1487,8 @@ namespace Trinity.OpenStack
 
     #endregion
 
-
     #region "Exception Objects"
 
-
-    public class InvalidURLorToken : Exception
-    {
-        public InvalidURLorToken() : base() { }
-
-        public InvalidURLorToken(string message) : base(message) { }
-
-        public InvalidURLorToken(string message, System.Exception inner) : base(message, inner) { }
-
-    }
 
     public class BadJsonException : Exception
     {
@@ -1560,7 +1596,7 @@ namespace Trinity.OpenStack
             }
             catch (Exception x)
             {
-                throw new InvalidURLorToken("POST request failed");
+                return (x.ToString());
             }
         }
 
@@ -1616,7 +1652,8 @@ namespace Trinity.OpenStack
            }
            catch (Exception x)
            {
-               throw new InvalidURLorToken("GET Request Failed");
+             //  OpenStackException.MakeString(x);
+               return x.ToString();
            }
        }
     }
@@ -1654,7 +1691,7 @@ namespace Trinity.OpenStack
         public string endpoint_testServiceid = String.Empty;
         public User endpoint_testUser = new User();
         public EndpointManager em = new EndpointManager();
-        public Token testToken;
+        public Token EPTestToken;
 
 
         public Boolean Set_Up_Create_Endpoints_Test(string admin_url, string admin_token, string testTenantName, string testServiceName)
@@ -1677,8 +1714,8 @@ namespace Trinity.OpenStack
                     if (u.name.Equals("EndpointsTestUser"))
                     {
                         endpoint_testUser = u;
-                        testToken = Token.Request_NoTenant(admin_url, testUserName, testUserPw);
-                        if (testToken.token_error.Equals(String.Empty))
+                        EPTestToken = Token.Request_NoTenant(admin_url, testUserName, testUserPw);
+                        if (EPTestToken.token_error.Equals(String.Empty))
                         {
                             em = new EndpointManager();
                             return true;
@@ -1713,17 +1750,18 @@ namespace Trinity.OpenStack
 
         public Boolean Tear_Down_Create_Endpoints_Test(string admin_url, string admin_token, User u, string testServiceId, string testTenantId)
         {
+            try
+            {
+                while (em.endpoint_list.Count > 0)
+                {
+                    em.endpoint_list[em.endpoint_list.Count].Delete_Endpoint(admin_url, admin_token);
+                }
+            }
+            catch
+            {
+                //do nothing
+            }
 
-
-                //em.List_Endpoints(admin_url + "/v2.0/", admin_token, admin_token);
-                //if (em.endpoint_list.Count > 0)
-                //{
-                //    while (em.endpoint_list.Count > 0)
-                //    {
-                //        em.endpoint_list[em.endpoint_list.Count - 1].Delete_Endpoint(admin_url, admin_token);
-                //    }
-
-                //}
 
             Boolean ret = true;
             User.Delete(admin_url, u.id, admin_token);
@@ -1740,17 +1778,9 @@ namespace Trinity.OpenStack
 
         public Boolean Run_Test_Endpoints(string admin_url, string serviceurl, string public_url, string admin_token, string token, string tenant_id, string service_id, string service_name, string region, int iterationNumber, string EndpointName, Boolean trace, ref string output)
         {
-            Boolean success;
-            try {
-                success = Test_Endpoint_List(ref em, token, admin_url + "/v2.0/", admin_token, iterationNumber);
-            } catch {
-                success = false;
-            }
-
-            if (success)
+            if (Test_Endpoint_List(ref em, token, admin_url, admin_token, iterationNumber))
             {
-                //User user ID instead of token!!
-                Endpoint ep = Endpoint.Create_Endpoint(admin_token, token, admin_url, service_id, region, service_id, serviceurl, public_url, tenant_id);
+                Endpoint ep = Endpoint.Create_Endpoint(admin_token, token, admin_url, service_id, region + iterationNumber, service_id, serviceurl, public_url, tenant_id);
                 if (trace == true)
                 {
                     output = ep.ToString();
@@ -1760,16 +1790,8 @@ namespace Trinity.OpenStack
             {
                 return false;
             }
-            try
-            {
-                success = Test_Endpoint_List(ref em, token, admin_url + "/v2.0/", admin_token, iterationNumber+1);
-            }
-            catch
-            {
-                success = false;
-            }
 
-            return success;
+            return Test_Endpoint_List(ref em, token, admin_url, admin_token, iterationNumber + 1);
         }
 
 
