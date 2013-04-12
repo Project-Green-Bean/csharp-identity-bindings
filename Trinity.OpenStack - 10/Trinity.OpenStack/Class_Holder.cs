@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 using System.Net;
 using System.IO;
@@ -515,7 +516,13 @@ namespace Trinity.OpenStack
                 Stream resStream = resp.GetResponseStream();
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
+            } catch (Exception x) {
+               // MessageBox.Show("Http error " + x.ToString());
+                return_user.name = ("error while parsing: " + x.ToString());
+                return (return_user);
+            }
 
+            try{
                 //parse server return ------------------------------------
                 JObject oServerReturn = JObject.Parse(ret);
                 String userStr = oServerReturn["user"].ToString();
@@ -526,14 +533,14 @@ namespace Trinity.OpenStack
                 String user_tenantid = oUserString["tenantId"].ToString();
                 String user_id = oUserString["id"].ToString();
                 String user_enabled = oUserString["enabled"].ToString();
-                String user_password = oUserString["password"].ToString();
+ //               String user_password = oUserString["password"].ToString();
 
                 return_user.name = user_name;
                 return_user.email = user_email;
                 return_user.tenantid = user_tenantid;
                 return_user.id = user_id;
                 return_user.enabled = user_enabled;
-                return_user.password = user_password;
+   //             return_user.password = user_password;
                 //--------------------------------------------------------
 
                 return (return_user);
@@ -542,7 +549,8 @@ namespace Trinity.OpenStack
             }
             catch (Exception x)
             {
-                return_user.name = x.ToString();
+                //return ("error while parsing: " +x.ToString());
+                return_user.name = ("error while parsing: " + x.ToString());
                 return (return_user);
             }
         }
@@ -950,7 +958,7 @@ namespace Trinity.OpenStack
                 // MessageBox.Show("Exception caught: \n" + x.ToString());
                 x.ToString();
 
-                throw new ObjectNotFoundException("Object Not Found; Could not delete"); // Change later
+                throw new ObjectNotFound("Endpoint Not Found; Could not delete"); // Change later
             }
         }
 
@@ -972,10 +980,10 @@ namespace Trinity.OpenStack
 
             Endpoint _endpoint = new Endpoint();
 
-            try
+            try //try catch for parsing endpoint
             {
                 JObject oServerReturn = JObject.Parse(string_to_parse);
-                try
+                try //try catch for name (not crucial)
                 {
                     String nameStr = oServerReturn["name"].ToString();
                     _endpoint.name = nameStr;
@@ -987,10 +995,19 @@ namespace Trinity.OpenStack
                 String internalURL = oServerReturn["internalURL"].ToString();
                 String publicURLStr = oServerReturn["publicURL"].ToString();
 
-                String typeStr = oServerReturn["type"].ToString();
+
                 String regionStr = oServerReturn["region"].ToString();
                 String idStr = oServerReturn["id"].ToString();
 
+                try//try catch for tyoe (not crucial)
+                {
+                    String typeStr = oServerReturn["type"].ToString();
+                    _endpoint.endpoint_type = typeStr;
+                }
+                catch
+                {
+                    //do nothing
+                }
 
                 _endpoint.admin_url = adminURLStr;
                 _endpoint.internal_url = internalURL;
@@ -998,50 +1015,14 @@ namespace Trinity.OpenStack
                 _endpoint.region = regionStr;
 
                 _endpoint.id = idStr;
-                _endpoint.endpoint_type = typeStr;
                 _endpoint.endpoint_error = "";
 
                 return _endpoint;
+            } catch {
+                    throw new BadJson("Json command contained incorrect fields");
+                } //end try catch for parsing endpoint
             }
-            catch (Exception x)
-            {
-                try
-                {
-                    JObject oServerReturn = JObject.Parse(string_to_parse);
-                    try
-                    {
-                        String nameStr = oServerReturn["name"].ToString();
-                        _endpoint.name = nameStr;
-                    }
-                    catch
-                    { }
-
-                    String adminURLStr = oServerReturn["endpoint"]["adminurl"].ToString();
-                    String internalURL = oServerReturn["endpoint"]["internalurl"].ToString();
-                    String publicURLStr = oServerReturn["endpoint"]["publicurl"].ToString();
-
-                    //String typeStr = oServerReturn["endpoint"]["type"].ToString();
-                    String regionStr = oServerReturn["endpoint"]["region"].ToString();
-                    String idStr = oServerReturn["endpoint"]["id"].ToString();
-
-
-                    _endpoint.admin_url = adminURLStr;
-                    _endpoint.internal_url = internalURL;
-                    _endpoint.public_url = publicURLStr;
-                    _endpoint.region = regionStr;
-
-                    _endpoint.id = idStr;
-                    //   _endpoint.type = typeStr;
-                    _endpoint.endpoint_error = "";
-
-                    return _endpoint;
-                }
-                catch
-                {
-                    throw new BadJsonException("Json command contained incorrect fields");
-                }
-            }
-        }
+        
 
 
         public static Endpoint Create_Endpoint(string admin_token_id, string user_id, string admin_url, string service_name, string region, string service_id, string public_url, string internal_url, string tenant_id)
@@ -1078,23 +1059,73 @@ namespace Trinity.OpenStack
             }
             catch (Exception x)
             {
-                throw x;
+                Exception ex = OpenStackObject.Parse_Error(x);
+                throw ex;
             }
 
             try
             {
-
                 return Endpoint.Parse(ret);
             }
-            catch (Exception x)
+            catch
             {
-                throw x;
+                throw new BadJson("Endpoint Failed to parse correctly, but was still created");
             }
         }
+
+        public static List<Endpoint> List_Endpoints(string url, string userId, string AdminToken)
+        {
+            List<Endpoint> Endpoint_List = new List<Endpoint>();
+            Endpoint newEndpoint = new Endpoint();
+            string ret = string.Empty;
+            try //Try catch for server return (with catch if empty)
+            {
+
+                try //try catch for the web request
+                {
+                    ret = newEndpoint.GET(AdminToken, url + "/v2.0/tokens/" + userId + "/endpoints");
+                }  catch (Exception x) {
+
+                Exception ex = OpenStackObject.Parse_Error(x);
+                throw ex;
+            } //end try catch for web request
+
+
+                JObject root = JObject.Parse(ret);
+                JArray ServerReturn = (JArray)root["endpoints"];
+
+
+                for (int i = 0; i < ServerReturn.Count; i++)
+                {
+                    newEndpoint = new Endpoint();
+
+                    try //try catch for endpiont parsing
+                    {
+                        newEndpoint = Endpoint.Parse(ServerReturn[i].ToString());
+                    }
+                    catch (Exception x)
+                    {
+                        throw x;
+                    } //end try catch for endpoint parsing
+
+                    Endpoint_List.Add(newEndpoint);
+                }
+
+
+                return Endpoint_List;
+
+            }
+            catch  
+            {
+               return new List<Endpoint>();
+            } //end try catch for server return
+
+        }
+    
     }
 
     #endregion
-
+/*
     #region Endpoint Manager
     public class EndpointManager : OpenStackObject
     {
@@ -1148,7 +1179,7 @@ namespace Trinity.OpenStack
 
     }
     #endregion
-
+    */
 
     #region Roles
     public class Role
@@ -1612,70 +1643,189 @@ namespace Trinity.OpenStack
 
     #endregion
 
-    #region "Exception Objects"
+    #region Exception Objects
 
 
-    public class BadJsonException : Exception
+
+
+
+    /// <summary>
+    /// Functions that throw this exception:
+    ///     Endpoint.Parse
+    ///     Create_Endpoint
+    /// </summary>
+    public class BadJson : Exception
     {
-        public BadJsonException() : base() { }
+        public BadJson() : base() { }
 
-        public BadJsonException(string message) : base(message) { }
+        public BadJson(string message) : base(message) { }
 
-        public BadJsonException(string message, System.Exception inner) : base(message, inner) { }
+        public BadJson(string message, System.Exception inner) : base(message, inner) { }
 
     }
 
-    public class ObjectNotFoundException : Exception
+    /// <summary>
+    /// Http status: 400
+    /// </summary>
+    public class BadRequest : Exception
     {
-        public ObjectNotFoundException() : base() { }
+        public BadRequest() : base() { }
 
-        public ObjectNotFoundException(string message) : base(message) { }
+        public BadRequest(string message) : base(message) { }
 
-        public ObjectNotFoundException(string message, System.Exception inner) : base(message, inner) { }
+        public BadRequest(string message, System.Exception inner) : base(message, inner) { }
 
     }
 
-    public class OpenStackException : OpenStackObject
+    /// <summary>
+    /// Http status: 409
+    /// 
+    /// message: Conflict
+    /// </summary>
+    public class Conflict : Exception
     {
-        // private string exception_number;
-        private string exception_description;
+        public Conflict() : base() { }
 
-        public OpenStackException()
-        {
-            base.Type = "Exception";
-        }
+        public Conflict(string message) : base(message) { }
 
-        // private Exception exception;
+        public Conflict(string message, System.Exception inner) : base(message, inner) { }
 
-        public override string ToString()
-        {
-            return exception_description;
-        }
+    }
 
-        public static OpenStackException Parse(String exceptionMessage)
-        {
-            OpenStackException ex = new OpenStackException();
+    /// <summary>
+    /// The service catalog is empty (talk to arnold: do we really need this? or is this otherwise handled?)
+    /// </summary>
+    public class EmptyCatalog : Exception
+    {
+        public EmptyCatalog() : base() { }
 
-            try
-            {
+        public EmptyCatalog(string message) : base(message) { }
 
-                string[] exceptioninfo = exceptionMessage.ToString().Split(':');
-                //ex.exception_number = exceptioninfo[0];
-                ex.exception_description = exceptionMessage;
+        public EmptyCatalog(string message, System.Exception inner) : base(message, inner) { }
 
-                //      ex.exception = exceptionMessage;
-            }
-            catch
-            {
-                // ex.exception_number = "-";
-                ex.exception_description = "OpenStack Library error";
+    }
 
-                //        ex.exception = exceptionMessage;
-            }
+    /// <summary>
+    /// Http status : 403
+    /// 
+    /// Forbidden: your credentials don't give you access to this resource
+    /// </summary>
+    public class Forbidden : Exception
+    {
+        public Forbidden() : base() { }
 
-            return ex;
-        }
+        public Forbidden(string message) : base("Forbidden" ) { }
 
+        public Forbidden(string message, System.Exception inner) : base(message, inner) { }
+
+    }
+
+
+    /// <summary>
+    /// Http status : 501
+    /// 
+    /// Not Implemented: the server does not support this operation
+    /// </summary>
+    public class NotImplemented : Exception
+    {
+        public NotImplemented() : base() { }
+
+        public NotImplemented(string message) : base("Not Implemented") { }
+
+        public NotImplemented(string message, System.Exception inner) : base(message, inner) { }
+
+    }
+
+    /// <summary>
+    /// Look into how to do this?
+    /// 
+    /// This form of authentication does not support looking up endpoints from an existing token.
+     /// </summary>
+    public class NoTokenLookup : Exception
+    {
+        public NoTokenLookup() : base() { }
+
+        public NoTokenLookup(string message) : base("Not Implemented") { }
+
+        public NoTokenLookup(string message, System.Exception inner) : base(message, inner) { }
+
+    }
+
+    /// <summary>
+    /// 
+    /// Unable to find unique resource
+    /// </summary>
+    public class NoUniqueMatch : Exception
+    {
+        public NoUniqueMatch() : base() { }
+
+        public NoUniqueMatch(string message) : base("Not Implemented") { }
+
+        public NoUniqueMatch(string message, System.Exception inner) : base(message, inner) { }
+
+    }
+
+    /// <summary>
+    /// Http status: 413
+    /// 
+    /// Over limit: you’re over the API limits for this time period.
+    /// </summary>
+    public class OverLimit : Exception
+    {
+        public OverLimit() : base() { }
+
+        public OverLimit(string message) : base(message) { }
+
+        public OverLimit(string message, System.Exception inner) : base(message, inner) { }
+
+    }
+
+    /// <summary>
+    /// Http status: 503
+    /// 
+    /// Service Unavailable: The server is currently unavailable.
+    /// </summary>
+    public class ServiceUnavailable : Exception
+    {
+        public ServiceUnavailable() : base() { }
+
+        public ServiceUnavailable(string message) : base(message) { }
+
+        public ServiceUnavailable(string message, System.Exception inner) : base(message, inner) { }
+
+    }
+
+
+    /// <summary>
+    /// Http status: 404
+    /// 
+    /// Function that throw this exception:
+    ///     Delete Endpoint
+    /// </summary>
+    public class ObjectNotFound : Exception
+    {
+        public ObjectNotFound() : base() { }
+
+        public ObjectNotFound(string message) : base(message) { }
+
+        public ObjectNotFound(string message, System.Exception inner) : base(message, inner) { }
+
+    }
+
+
+    /// <summary>
+    /// Http status: 401
+    /// 
+    /// 
+    /// Unauthorized: bad credentials
+    /// </summary>
+    public class Unauthorized : Exception
+    {
+        public Unauthorized() : base() { }
+
+        public Unauthorized(string message) : base(message) { }
+
+        public Unauthorized(string message, System.Exception inner) : base(message, inner) { }
 
     }
 
@@ -1756,6 +1906,63 @@ namespace Trinity.OpenStack
 
         }
 
+        public static Exception Parse_Error(Exception ex){
+            string error_message = ex.ToString();
+            Match match_400 = Regex.Match(error_message, @"400", RegexOptions.IgnoreCase);
+
+            return ex;
+
+            //switch (ex.ErrorCode)
+            //{
+            //    case 400:
+            //        return new BadRequest();
+            //    case 401:
+            //        return new Unauthorized();
+            //    case 403:
+            //        return new Forbidden();
+            //    case 404:
+            //        return new ObjectNotFound();
+            //    case 409:
+            //        return new Conflict();
+            //    case 413:
+            //        return new OverLimit();
+            //    case 501:
+            //        return new NotImplemented();
+            //    case 503:
+            //        return new ServiceUnavailable();
+            //    default:
+            //        return ex;
+            //}
+
+        }
+
+        //public static Exception Parse_Error(Exception ex, String Message)
+        //{
+
+        //    switch (ex.ErrorCode)
+        //    {
+        //        case 400:
+        //            return new BadRequest(Message);
+        //        case 401:
+        //            return new Unauthorized(Message);
+        //        case 403:
+        //            return new Forbidden(Message);
+        //        case 404:
+        //            return new ObjectNotFound(Message);
+        //        case 409:
+        //            return new Conflict(Message);
+        //        case 413:
+        //            return new OverLimit(Message);
+        //        case 501:
+        //            return new NotImplemented(Message);
+        //        case 503:
+        //            return new ServiceUnavailable(Message);
+        //        default:
+        //            return ex;
+        //    }
+
+        //}
+
 
         protected string GET(string User_Token, string url)
         {
@@ -1785,29 +1992,6 @@ namespace Trinity.OpenStack
 
     #endregion
 
-    #region "Deleted Object"
-    public class DeletedObject : OpenStackObject
-    {
-        private string message;
-
-
-        public DeletedObject()
-        {
-            base.Type = "Deleted Object";
-            message = "Object successfully deleted from database";
-        }
-
-
-        public override string ToString()
-        {
-            return message;
-        }
-
-    }
-
-
-    #endregion
-
     #region Test Functions
 
     public class TestCreateEndpoint
@@ -1815,7 +1999,7 @@ namespace Trinity.OpenStack
         public string endpoint_testTenantid = String.Empty;
         public string endpoint_testServiceid = String.Empty;
         public User endpoint_testUser = new User();
-        public EndpointManager em = new EndpointManager();
+        public List<Endpoint> em = new List<Endpoint>();
         public Token EPTestToken;
         protected List<Endpoint> DisposableEndpoints;
         protected int BaseCount = 0;
@@ -1844,9 +2028,10 @@ namespace Trinity.OpenStack
                         EPTestToken = Token.Request_NoTenant(admin_url, testUserName, testUserPw);
                         if (EPTestToken.token_error.Equals(String.Empty))
                         {
-                            em = new EndpointManager();
-                            em.List_Endpoints(admin_url, admin_token, admin_token);
-                            BaseCount = em.endpoint_list.Count;
+
+                            
+                            em = Endpoint.List_Endpoints(admin_url, admin_token, admin_token);
+                            BaseCount =em.Count;
                             return true;
                         }
                         else
@@ -1926,18 +2111,13 @@ namespace Trinity.OpenStack
         }
 
 
-        public bool Test_Endpoint_List(ref EndpointManager em, string token, string admin_url, string admin_token, int iterationNumber)
+        public bool Test_Endpoint_List(ref List<Endpoint> em, string token, string admin_url, string admin_token, int iterationNumber)
         {
-
-            em.List_Endpoints(admin_url, admin_token, admin_token);
-
-            if (em.endpoint_manager_error == null)
+            try
             {
-
-                return em.endpoint_list.Count == (iterationNumber + BaseCount);
-            }
-            else
-            {
+                em = Endpoint.List_Endpoints(admin_url, admin_token, admin_token);
+                return em.Count == (iterationNumber + BaseCount);
+            } catch {
                 return false;
             }
 
