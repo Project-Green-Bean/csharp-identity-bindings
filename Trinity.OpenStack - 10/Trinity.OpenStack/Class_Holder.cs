@@ -1078,19 +1078,20 @@ namespace Trinity.OpenStack
             List<Endpoint> Endpoint_List = new List<Endpoint>();
             Endpoint newEndpoint = new Endpoint();
             string ret = string.Empty;
-            try //Try catch for server return (with catch if empty)
-            {
+
 
                 try //try catch for the web request
                 {
                     ret = newEndpoint.GET(AdminToken, url + "/v2.0/tokens/" + userId + "/endpoints");
-                }  catch (Exception x) {
+                }  catch (Exception x) 
+                {
 
                 Exception ex = OpenStackObject.Parse_Error(x);
                 throw ex;
-            } //end try catch for web request
+                } //end try catch for web request
 
-
+            try //Try catch for server return (with catch if empty)
+            {
                 JObject root = JObject.Parse(ret);
                 JArray ServerReturn = (JArray)root["endpoints"];
 
@@ -1115,8 +1116,10 @@ namespace Trinity.OpenStack
                 return Endpoint_List;
 
             }
-            catch  
+            catch  (Exception x)
             {
+                x.ToString();
+
                return new List<Endpoint>();
             } //end try catch for server return
 
@@ -1871,7 +1874,7 @@ namespace Trinity.OpenStack
             }
             catch (Exception x)
             {
-                return (x.ToString());
+                throw x;
             }
         }
 
@@ -1908,31 +1911,39 @@ namespace Trinity.OpenStack
 
         public static Exception Parse_Error(Exception ex){
             string error_message = ex.ToString();
-            Match match_400 = Regex.Match(error_message, @"400", RegexOptions.IgnoreCase);
+            string errorcode;
+            Match match_code = Regex.Match(error_message, @"\([\d]{3}\)", RegexOptions.IgnoreCase);
+            if (match_code.Success)
+            {
+                errorcode = match_code.Groups[0].Value;
+            }
+            else
+            {
+                return ex;
+            }
 
-            return ex;
 
-            //switch (ex.ErrorCode)
-            //{
-            //    case 400:
-            //        return new BadRequest();
-            //    case 401:
-            //        return new Unauthorized();
-            //    case 403:
-            //        return new Forbidden();
-            //    case 404:
-            //        return new ObjectNotFound();
-            //    case 409:
-            //        return new Conflict();
-            //    case 413:
-            //        return new OverLimit();
-            //    case 501:
-            //        return new NotImplemented();
-            //    case 503:
-            //        return new ServiceUnavailable();
-            //    default:
-            //        return ex;
-            //}
+            switch (errorcode)
+            {
+                case "(400)":
+                    return new BadRequest();
+                case "(401)":
+                    return new Unauthorized();
+                case "(403)":
+                    return new Forbidden();
+                case "(404)":
+                    return new ObjectNotFound();
+                case "(409)":
+                    return new Conflict();
+                case "(413)":
+                    return new OverLimit();
+                case "(501)":
+                    return new NotImplemented();
+                case "(503)":
+                    return new ServiceUnavailable();
+                default:
+                    return ex;
+            }
 
         }
 
@@ -1985,7 +1996,7 @@ namespace Trinity.OpenStack
             catch (Exception x)
             {
                 //  OpenStackException.MakeString(x);
-                return x.ToString();
+                throw x;
             }
         }
     }
