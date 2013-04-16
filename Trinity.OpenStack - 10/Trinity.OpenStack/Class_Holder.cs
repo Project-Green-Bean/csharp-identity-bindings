@@ -296,6 +296,17 @@ namespace Trinity.OpenStack
     #region Tenants
     public class Tenants
     {
+        
+        //=======================================================================================//
+        //--                                 Tenant  - Get                                     --//
+        //---------------------------------------------------------------------------------------//
+        //--                                                                                   --//
+        //--  Purpose : Send a Get request to the Keystone Service and recieve back a          --//
+        //--            json string containing the list of tenants                             --//
+        //--                                                                                   --//
+        //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
+        //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
+        //=======================================================================================//
         public static string Get(string url, string User_Token)
         {
             string ret = string.Empty;
@@ -321,6 +332,16 @@ namespace Trinity.OpenStack
             }
         }
 
+        //=======================================================================================//
+        //--                                 Tenant  - List                                    --//
+        //---------------------------------------------------------------------------------------//
+        //--                                                                                   --//
+        //--  Purpose : Send a Get request to the Keystone Service and recieve back a          --//
+        //--            json string containing the list of tenants                             --//
+        //--                                                                                   --//
+        //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
+        //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
+        //=======================================================================================//
         public string Tenant_List(string url, string User_Token)
         {
 
@@ -350,7 +371,17 @@ namespace Trinity.OpenStack
 
         }
 
-        private string BtnCreateTenant_Click(string adminUrl, string User_Token, string tenantName, string tenantDescrption)
+        //=======================================================================================//
+        //--                                 Tenant  - Create                                  --//
+        //---------------------------------------------------------------------------------------//
+        //--                                                                                   --//
+        //--  Purpose : Send a Post request to the Keystone Service with new tenant            --//
+        //--            information and creates the new tenant                                 --//
+        //--                                                                                   --//
+        //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
+        //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
+        //=======================================================================================//
+        private string Create_Tenant(string adminUrl, string User_Token, string tenantName, string tenantDescrption)
         {
 
             string ret = string.Empty;
@@ -390,6 +421,16 @@ namespace Trinity.OpenStack
             }
         }
 
+        //=======================================================================================//
+        //--                                 Tenant  - Delete                                  --//
+        //---------------------------------------------------------------------------------------//
+        //--                                                                                   --//
+        //--  Purpose : Send a Post request to the Keystone Service with the tenant            --//
+        //--            ID of the tenant to be deleted and delete the tenant                   --//
+        //--                                                                                   --//
+        //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
+        //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
+        //=======================================================================================//
         public string Delete_Tenant(string adminUrl, string User_Token, string tenantId)
         {
 
@@ -418,6 +459,16 @@ namespace Trinity.OpenStack
             }
         }
 
+        //=======================================================================================//
+        //--                                 Tenant  - Update                                  --//
+        //---------------------------------------------------------------------------------------//
+        //--                                                                                   --//
+        //--  Purpose : Send a Post request to the Keystone Service with the updated           --//
+        //--            tenant description and update the tenant                               --//
+        //--                                                                                   --//
+        //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
+        //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
+        //=======================================================================================//
         private string Update_Tenant(string adminUrl, string User_Token, string tenantId, string tenantDescription)
         {
 
