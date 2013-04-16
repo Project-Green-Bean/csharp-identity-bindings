@@ -1009,7 +1009,7 @@ namespace Trinity.OpenStack
 
                     return _endpoint;
                 }
-                catch (Exception x)
+                catch 
                 {
                     try
                     {
@@ -1969,32 +1969,83 @@ namespace Trinity.OpenStack
 
         }
 
-        //public static Exception Parse_Error(Exception ex, String Message)
-        //{
+        public static Exception Parse_Error(Exception ex, String message)
+        {
+            string error_message = ex.ToString();
+            string errorcode;
+            Match match_code = Regex.Match(error_message, @"\([\d]{3}\)", RegexOptions.IgnoreCase);
+            if (match_code.Success)
+            {
+                errorcode = match_code.Groups[0].Value;
+            }
+            else
+            {
+                return ex;
+            }
 
-        //    switch (ex.ErrorCode)
-        //    {
-        //        case 400:
-        //            return new BadRequest(Message);
-        //        case 401:
-        //            return new Unauthorized(Message);
-        //        case 403:
-        //            return new Forbidden(Message);
-        //        case 404:
-        //            return new ObjectNotFound(Message);
-        //        case 409:
-        //            return new Conflict(Message);
-        //        case 413:
-        //            return new OverLimit(Message);
-        //        case 501:
-        //            return new NotImplemented(Message);
-        //        case 503:
-        //            return new ServiceUnavailable(Message);
-        //        default:
-        //            return ex;
-        //    }
 
-        //}
+            switch (errorcode)
+            {
+                case "(400)":
+                    return new BadRequest(message);
+                case "(401)":
+                    return new Unauthorized(message);
+                case "(403)":
+                    return new Forbidden(message);
+                case "(404)":
+                    return new ObjectNotFound(message);
+                case "(409)":
+                    return new Conflict(message);
+                case "(413)":
+                    return new OverLimit(message);
+                case "(501)":
+                    return new NotImplemented(message);
+                case "(503)":
+                    return new ServiceUnavailable(message);
+                default:
+                    return ex;
+            }
+
+        }
+
+        public static Exception Parse_Error(Exception ex, String message, Exception inner)
+        {
+            string error_message = ex.ToString();
+            string errorcode;
+            Match match_code = Regex.Match(error_message, @"\([\d]{3}\)", RegexOptions.IgnoreCase);
+            if (match_code.Success)
+            {
+                errorcode = match_code.Groups[0].Value;
+            }
+            else
+            {
+                return ex;
+            }
+
+
+            switch (errorcode)
+            {
+                case "(400)":
+                    return new BadRequest(message, inner);
+                case "(401)":
+                    return new Unauthorized(message, inner);
+                case "(403)":
+                    return new Forbidden(message, inner);
+                case "(404)":
+                    return new ObjectNotFound(message, inner);
+                case "(409)":
+                    return new Conflict(message, inner);
+                case "(413)":
+                    return new OverLimit(message, inner);
+                case "(501)":
+                    return new NotImplemented(message, inner);
+                case "(503)":
+                    return new ServiceUnavailable(message, inner);
+                default:
+                    return ex;
+            }
+
+        }
 
 
         protected string GET(string User_Token, string url)
