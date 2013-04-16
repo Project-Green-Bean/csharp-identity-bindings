@@ -983,41 +983,63 @@ namespace Trinity.OpenStack
             try //try catch for parsing endpoint
             {
                 JObject oServerReturn = JObject.Parse(string_to_parse);
-                try //try catch for name (not crucial)
+
+                try
                 {
+
                     String nameStr = oServerReturn["name"].ToString();
-                    _endpoint.name = nameStr;
-                }
-                catch
-                { }
 
-                String adminURLStr = oServerReturn["adminURL"].ToString();
-                String internalURL = oServerReturn["internalURL"].ToString();
-                String publicURLStr = oServerReturn["publicURL"].ToString();
+                    String adminURLStr = oServerReturn["adminURL"].ToString();
+                    String internalURL = oServerReturn["internalURL"].ToString();
+                    String publicURLStr = oServerReturn["publicURL"].ToString();
 
-
-                String regionStr = oServerReturn["region"].ToString();
-                String idStr = oServerReturn["id"].ToString();
-
-                try//try catch for tyoe (not crucial)
-                {
                     String typeStr = oServerReturn["type"].ToString();
+                    String regionStr = oServerReturn["region"].ToString();
+                    String idStr = oServerReturn["id"].ToString();
+
+
+                    _endpoint.admin_url = adminURLStr;
+                    _endpoint.internal_url = internalURL;
+                    _endpoint.public_url = publicURLStr;
+                    _endpoint.region = regionStr;
+                    _endpoint.name = nameStr;
+                    _endpoint.id = idStr;
                     _endpoint.endpoint_type = typeStr;
+                    _endpoint.endpoint_error = "";
+
+                    return _endpoint;
                 }
-                catch
+                catch (Exception x)
                 {
-                    //do nothing
-                }
+                    try
+                    {
 
-                _endpoint.admin_url = adminURLStr;
-                _endpoint.internal_url = internalURL;
-                _endpoint.public_url = publicURLStr;
-                _endpoint.region = regionStr;
+                     //   String nameStr = oServerReturn["endpoint"]["name"].ToString();
 
-                _endpoint.id = idStr;
-                _endpoint.endpoint_error = "";
+                        String adminURLStr = oServerReturn["endpoint"]["adminurl"].ToString();
+                        String internalURL = oServerReturn["endpoint"]["internalurl"].ToString();
+                        String publicURLStr = oServerReturn["endpoint"]["publicurl"].ToString();
 
-                return _endpoint;
+                        String regionStr = oServerReturn["endpoint"]["region"].ToString();
+                        String idStr = oServerReturn["endpoint"]["id"].ToString();
+
+
+                        _endpoint.admin_url = adminURLStr;
+                        _endpoint.internal_url = internalURL;
+                        _endpoint.public_url = publicURLStr;
+                        _endpoint.region = regionStr;
+                    //    _endpoint.name = nameStr;
+                        _endpoint.id = idStr;
+                        //   _endpoint.type = typeStr;
+                        _endpoint.endpoint_error = "";
+
+                        return _endpoint;
+                    }
+                    catch
+                    {
+                        throw new BadJson("Json command was contained incorrect fields");
+                    } //end catch of second parse attempt
+                } //End of first parse attempt
             } catch {
                     throw new BadJson("Json command contained incorrect fields");
                 } //end try catch for parsing endpoint
@@ -2003,6 +2025,8 @@ namespace Trinity.OpenStack
 
     #endregion
 
+    /*
+
     #region Test Functions
 
     public class TestCreateEndpoint
@@ -2280,5 +2304,5 @@ namespace Trinity.OpenStack
     }
 
     #endregion
-
+    */
 } // end Trinity.OpenStack Namespace
