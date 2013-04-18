@@ -1407,17 +1407,14 @@ namespace Trinity.OpenStack
 
     #endregion
 
-
     #region Roles
-    public class Role
+    public class Role : OpenStackObject
     {
         public string name;
         public string id;
-        public string error;
 
         public static Role Add(string url, string name, string admin_token)
         {
-            Role return_role = new Role();
             string ret = string.Empty;
 
             StreamWriter requestWriter;
@@ -1441,23 +1438,24 @@ namespace Trinity.OpenStack
                 Stream resStream = resp.GetResponseStream();
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
-
-                return_role = Parse(ret);
-
-                return return_role;
             }
             catch (Exception x)
             {
-                return_role.error = x.ToString();
-                return return_role;
+                throw OpenStackObject.Parse_Error(x);
+            }
+
+            try
+            {
+                return Role.Parse(ret);
+            }
+            catch
+            {
+                throw new BadJson("Role failed to parse correctly, but was still created.");
             }
         }
 
-        public static string Delete(string url, string role_id, string admin_token)
+        public static void Delete(string url, string role_id, string admin_token)
         {
-
-            string ret = string.Empty;
-
             try
             {
                 HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + "/v2.0/OS-KSADM/roles/" + role_id);
@@ -1469,13 +1467,10 @@ namespace Trinity.OpenStack
                 HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
                 Stream resStream = resp.GetResponseStream();
                 StreamReader reader = new StreamReader(resStream);
-                ret = reader.ReadToEnd();
-
-                return ret;
             }
             catch (Exception x)
             {
-                return ("Exception caught: \n" + x.ToString());
+                throw OpenStackObject.Parse_Error(x);
             }
         }
 
@@ -1497,21 +1492,26 @@ namespace Trinity.OpenStack
                 Stream resStream = resp.GetResponseStream();
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
-
-                return_role = Parse(ret);
-
-                return return_role;
             }
             catch (Exception x)
             {
-                return_role.error = x.ToString();
-                return return_role;
+                throw OpenStackObject.Parse_Error(x);
+            }
+
+            try
+            {
+                return Role.Parse(ret);
+            }
+            catch
+            {
+                throw new BadJson("Role failed to parse correctly, but was retrieved.");
             }
         }
 
-        public static string List(string url, string admin_token)
+        public static List<Role> List(string url, string admin_token)
         {
-            string ret = string.Empty;
+            string ret = String.Empty;
+            List<Role> RoleList = new List<Role>();
 
             try
             {
@@ -1526,96 +1526,66 @@ namespace Trinity.OpenStack
                 Stream resStream = resp.GetResponseStream();
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
-
-                return ret;
             }
-
             catch (Exception x)
             {
-                return ("Exception caught: " + x.ToString());
+                throw OpenStackObject.Parse_Error(x);
             }
-        }
 
-        public static Role Parse(string server_return)
-        {
-            Role return_role = new Role();
-
-            JObject oServerReturn = JObject.Parse(server_return);
-            String roleStr = oServerReturn["role"].ToString();
-
-            JObject oRoleStr = JObject.Parse(roleStr);
-            String role_id = oRoleStr["id"].ToString();
-            String role_name = oRoleStr["name"].ToString();
-
-            return_role.id = role_id;
-            return_role.name = role_name;
-
-            return return_role;
-        }
-    }
-
-    #endregion
-
-    #region Role Manager
-    public class RoleManager : OpenStackObject
-    {
-        public List<Role> role_list;
-        public Exception role_manager_error;
-
-        public RoleManager()
-        {
-            base.Type = "Role Manager";
-        }
-
-        public void List_Roles(string url, string userToken, string AdminToken)
-        {
-            List<Role> Role_List = new List<Role>();
-            string ret = string.Empty;
             try
             {
-
-                ret = Role.List(url, AdminToken);
-
                 JObject root = JObject.Parse(ret);
                 JArray ServerReturn = (JArray)root["roles"];
 
                 if (ServerReturn != null)
                 {
-
                     for (int i = 0; i < ServerReturn.Count; i++)
                     {
                         Role newRole = new Role();
-
                         try
                         {
                             newRole = Role.Parse(ServerReturn[i].ToString());
                         }
                         catch (Exception x)
                         {
-                            role_manager_error = x;
-                            throw x;
+                            throw new BadJson("Role List failed to parse correctly, but was retrieved.");
                         }
-
-                        Role_List.Add(newRole);
+                        RoleList.Add(newRole);
                     }
-
-
-                    role_list = Role_List;
                 }
-                else
-                {
-                    role_list = new List<Role>();
-                }
-
             }
             catch (Exception x)
             {
-                throw x;
+                throw OpenStackObject.Parse_Error(x);
             }
-
+            return RoleList;
         }
 
+        public static Role Parse(string server_return)
+        {
+            Role return_role = new Role();
+
+            try
+            {
+                JObject oServerReturn = JObject.Parse(server_return);
+                String roleStr = oServerReturn["role"].ToString();
+
+                JObject oRoleStr = JObject.Parse(roleStr);
+                String role_id = oRoleStr["id"].ToString();
+                String role_name = oRoleStr["name"].ToString();
+
+                return_role.id = role_id;
+                return_role.name = role_name;
+
+                return return_role;
+            }
+            catch
+            {
+                throw new BadJson("Role Parse Json command contained incorrect fields.");
+            }
+        }
     }
+
     #endregion
 
     #region Service Methods
