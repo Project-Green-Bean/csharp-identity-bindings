@@ -1406,61 +1406,7 @@ namespace Trinity.OpenStack
     }
 
     #endregion
-/*
-    #region Endpoint Manager
-    public class EndpointManager : OpenStackObject
-    {
-        public List<Endpoint> endpoint_list;
-        public Exception endpoint_manager_error;
 
-        public EndpointManager()
-        {
-            base.Type = "Endpoint Manager";
-        }
-
-        public void List_Endpoints(string url, string userToken, string AdminToken)
-        {
-            List<Endpoint> Endpoint_List = new List<Endpoint>();
-            string ret = string.Empty;
-            try
-            {
-
-                ret = base.GET(AdminToken, url + "/v2.0/tokens/" + userToken + "/endpoints");
-
-                JObject root = JObject.Parse(ret);
-                JArray ServerReturn = (JArray)root["endpoints"];
-
-
-                for (int i = 0; i < ServerReturn.Count; i++)
-                {
-                    Endpoint newEndpoint = new Endpoint();
-
-                    try
-                    {
-                        newEndpoint = Endpoint.Parse(ServerReturn[i].ToString());
-                    }
-                    catch (Exception x)
-                    {
-                        endpoint_manager_error = x;
-                    }
-
-                    Endpoint_List.Add(newEndpoint);
-                }
-
-
-                endpoint_list = Endpoint_List;
-
-            }
-            catch (Exception x)
-            {
-                endpoint_list = new List<Endpoint>();
-            }
-
-        }
-
-    }
-    #endregion
-    */
 
     #region Roles
     public class Role
