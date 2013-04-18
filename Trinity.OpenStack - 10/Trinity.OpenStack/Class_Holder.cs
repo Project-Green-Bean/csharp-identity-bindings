@@ -1117,68 +1117,6 @@ namespace Trinity.OpenStack
 
     #endregion
 
-    #region User Manager
-    public class UserManager : OpenStackObject
-    {
-        public List<User> user_list;
-        public Exception user_manager_error;
-
-        public UserManager()
-        {
-            base.Type = "User Manager";
-        }
-
-        public void List_User(string url, string userToken, string AdminToken)
-        {
-            List<User> User_List = new List<User>();
-            string ret = string.Empty;
-            try
-            {
-
-                User_List = User.List(url, AdminToken);
-
-                JObject root = JObject.Parse(ret);
-                JArray ServerReturn = (JArray)root["users"];
-
-                if (ServerReturn != null)
-                {
-
-                    for (int i = 0; i < ServerReturn.Count; i++)
-                    {
-                        User newRole = new User();
-
-                        try
-                        {
-                            newRole = User.Parse(ServerReturn[i].ToString());
-                        }
-                        catch (Exception x)
-                        {
-                            user_manager_error = x;
-                            throw x;
-                        }
-
-                        User_List.Add(newRole);
-                    }
-
-
-                    user_list = User_List;
-                }
-                else
-                {
-                    user_list = new List<User>();
-                }
-
-            }
-            catch (Exception x)
-            {
-                throw x;
-            }
-
-        }
-
-    }
-    #endregion
-
     #region Endpoints
     public class Endpoint : OpenStackObject
     {
