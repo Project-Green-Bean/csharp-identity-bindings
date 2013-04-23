@@ -1,4 +1,3 @@
-
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -1486,7 +1485,9 @@ namespace Trinity.OpenStack
 
             try
             {
-                return Role.Parse(ret);
+                JObject root = JObject.Parse(ret);
+                JObject ServerReturn = (JObject)root["role"];
+                return Role.Parse(ServerReturn.ToString());
             }
             catch
             {
@@ -1517,7 +1518,7 @@ namespace Trinity.OpenStack
         public static Role Get(string url, string role_id, string admin_token)
         {
             string ret = string.Empty;
-            Role return_role = new Role();
+
 
             try
             {
@@ -1540,11 +1541,13 @@ namespace Trinity.OpenStack
 
             try
             {
-                return Role.Parse(ret);
+                JObject root = JObject.Parse(ret);
+                JObject ServerReturn = (JObject)root["role"];
+                return Role.Parse(ServerReturn.ToString());
             }
             catch
             {
-                throw new BadJson("Role failed to parse correctly, but was retrieved.");
+                throw new BadJson("Role failed to parse correctly, but was retrieved. ");
             }
         }
 
@@ -1588,7 +1591,7 @@ namespace Trinity.OpenStack
                         }
                         catch (Exception x)
                         {
-                            throw new BadJson("Role List failed to parse correctly, but was retrieved.");
+                            throw x;
                         }
                         RoleList.Add(newRole);
                     }
@@ -1608,16 +1611,15 @@ namespace Trinity.OpenStack
             try
             {
                 JObject oServerReturn = JObject.Parse(server_return);
-                String roleStr = oServerReturn["role"].ToString();
 
-                JObject oRoleStr = JObject.Parse(roleStr);
-                String role_id = oRoleStr["id"].ToString();
-                String role_name = oRoleStr["name"].ToString();
+                String role_id = oServerReturn["id"].ToString();
+                String role_name = oServerReturn["name"].ToString();
 
                 return_role.id = role_id;
                 return_role.name = role_name;
 
                 return return_role;
+
             }
             catch
             {
