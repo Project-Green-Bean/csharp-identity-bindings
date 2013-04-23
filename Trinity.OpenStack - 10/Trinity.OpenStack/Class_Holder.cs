@@ -293,11 +293,16 @@ namespace Trinity.OpenStack
         } // end Get method
     } //end API_Info class
     #endregion
-
     #region Tenants
-    public class Tenants
+    public class Tenant
     {
-        
+
+        public string enabled;
+        public string description;
+        public string name;
+        public string id;
+
+
         //=======================================================================================//
         //--                                 Tenant  - Get                                     --//
         //---------------------------------------------------------------------------------------//
@@ -308,12 +313,12 @@ namespace Trinity.OpenStack
         //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
         //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
         //=======================================================================================//
-        public static string Get(string url, string User_Token)
+        public static Tenant Get(string url, string User_Token, string TenantID)
         {
             string ret = string.Empty;
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + "/v2.0/tenants/" + TenantID);
 
                 webRequest.Method = "GET";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -325,13 +330,21 @@ namespace Trinity.OpenStack
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                return ret;
+                JObject root = JObject.Parse(ret);
+                JToken ServerReturn = root["tenant"];
+
+                Tenant newTenant = new Tenant();
+                newTenant = Tenant.Parse(ServerReturn.ToString());
+
+                return newTenant;
+
             }
-            catch
+            catch (Exception x)
             {
-                return "Request_Token.Get failed to retrieve data.";
+                throw x;
             }
         }
+
 
         //=======================================================================================//
         //--                                 Tenant  - List                                    --//
@@ -343,7 +356,7 @@ namespace Trinity.OpenStack
         //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
         //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
         //=======================================================================================//
-        public string Tenant_List(string url, string User_Token)
+        public static List<Tenant> List(string url, string User_Token)
         {
 
 
@@ -362,15 +375,39 @@ namespace Trinity.OpenStack
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                return ret;
+                //return ret;
 
+                Tenant newTenant = new Tenant();
+                List<Tenant> tenantList = new List<Tenant>();
+
+                JObject root = JObject.Parse(ret);
+                JArray ServerReturn = (JArray)root["tenants"];
+
+                for (int i = 0; i < ServerReturn.Count; i++)
+                {
+                    newTenant = new Tenant();
+
+                    try
+                    {
+                        newTenant = Tenant.Parse(ServerReturn[i].ToString());
+                    }
+                    catch (Exception x)
+                    {
+                        throw;
+                        //throw x;
+                    }
+
+                    tenantList.Add(newTenant);
+                }
+
+                return tenantList;
             }
             catch (Exception x)
             {
-                return x.ToString();
+                throw x;
             }
-
         }
+
 
         //=======================================================================================//
         //--                                 Tenant  - Create                                  --//
@@ -382,7 +419,7 @@ namespace Trinity.OpenStack
         //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
         //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
         //=======================================================================================//
-        private string Create_Tenant(string adminUrl, string User_Token, string tenantName, string tenantDescrption)
+        public static Tenant Create(string url, string User_Token, string tenantName, string tenantDescription)
         {
 
             string ret = string.Empty;
@@ -391,14 +428,14 @@ namespace Trinity.OpenStack
             string postData = "{" +
                                 "\"tenant\":{" +
                                             "\"name\":\"" + tenantName + "\", " +
-                                            "\"description\":\"" + tenantDescrption + "\", " +
+                                            "\"description\":\"" + tenantDescription + "\", " +
                                             "\"enabled\":" + "true" +
                                             "}}";
 
 
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(adminUrl + "/v2.0/tenants");
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + "/v2.0/tenants");
                 webRequest.Headers.Add("X-Auth-Token", User_Token);
                 webRequest.Method = "POST";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -409,18 +446,22 @@ namespace Trinity.OpenStack
                 requestWriter.Write(postData);
                 requestWriter.Close();
 
+
                 HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
                 Stream resStream = resp.GetResponseStream();
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                return ret;
+                Tenant newtenant = Tenant.ReturnTenantByName(url, User_Token, tenantName);
+                return newtenant;
+
             }
             catch (Exception x)
             {
-                return x.ToString();
+                throw x;
             }
         }
+
 
         //=======================================================================================//
         //--                                 Tenant  - Delete                                  --//
@@ -432,7 +473,7 @@ namespace Trinity.OpenStack
         //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
         //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
         //=======================================================================================//
-        public string Delete_Tenant(string adminUrl, string User_Token, string tenantId)
+        public static void Delete(string adminUrl, string User_Token, string tenantId)
         {
 
             string ret = string.Empty;
@@ -452,13 +493,14 @@ namespace Trinity.OpenStack
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                return ret;
+                return;
             }
             catch (Exception x)
             {
-                return x.ToString();
+                throw x;
             }
         }
+
 
         //=======================================================================================//
         //--                                 Tenant  - Update                                  --//
@@ -470,7 +512,7 @@ namespace Trinity.OpenStack
         //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
         //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
         //=======================================================================================//
-        private string Update_Tenant(string adminUrl, string User_Token, string tenantId, string tenantDescription)
+        public static string Update(string adminUrl, string User_Token, string tenantId, string tenantDescription)
         {
 
             StreamWriter requestWriter;
@@ -505,11 +547,71 @@ namespace Trinity.OpenStack
             }
             catch (Exception x)
             {
-                return x.ToString();
+                throw x;
             }
         }
-    }
 
+
+        public static Tenant ReturnTenantByName(string url, string User_Token, string TenantName)
+        {
+            try
+            {
+
+                List<Tenant> CurrentTenant = Tenant.List(url, User_Token);
+                Tenant ReturnTenant = new Tenant();
+
+                for (int x = 0; x < CurrentTenant.Count; x++)
+                {
+                    if (CurrentTenant[x].name == TenantName)
+                    {
+                        ReturnTenant = CurrentTenant[x];
+                        break;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
+
+                return ReturnTenant;
+            }
+            catch (Exception x)
+            {
+                throw x;
+            }
+        }
+
+        public static Tenant Parse(string string_to_parse)
+        {
+
+            Tenant _tenant = new Tenant();
+
+            JObject oServerReturn = JObject.Parse(string_to_parse);
+
+            String tenantEnabled = oServerReturn["enabled"].ToString();
+            String tenantDescription = oServerReturn["description"].ToString();
+            String tenantName = oServerReturn["name"].ToString();
+            String tenantID = oServerReturn["id"].ToString();
+
+            _tenant.name = tenantName;
+            _tenant.id = tenantID;
+            _tenant.enabled = tenantEnabled;
+            _tenant.description = tenantDescription;
+
+            return _tenant;
+        }
+
+
+        public static string PrettyPrint(Tenant printTen)
+        {
+            string ret = string.Empty;
+
+            ret = "{" + '\n' + "Name: " + printTen.name + '\n' + "Id: " + printTen.id + '\n' + "Description: " + printTen.description + '\n' + "Enabled: " + printTen.enabled + '\n' + "}" + "\n\n";
+
+            return ret;
+        }
+    }
     #endregion
 
     #region User Methods
