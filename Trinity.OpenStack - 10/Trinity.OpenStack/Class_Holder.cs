@@ -1644,6 +1644,7 @@ namespace Trinity.OpenStack
         public string name;
         public string type;
         public string description;
+        public string id;
 
         #endregion
 
@@ -1895,7 +1896,7 @@ namespace Trinity.OpenStack
             try
             {
                 JObject root = JObject.Parse(ret);
-                JArray ServerReturn = (JArray)root["services"];
+                JArray ServerReturn = (JArray)root["OS-KSADM:services"];
 
                 if (ServerReturn != null)
                 {
@@ -1904,7 +1905,7 @@ namespace Trinity.OpenStack
                         Service newService = new Service();
                         try
                         {
-                            newService = Service.Parse(ServerReturn[i].ToString());
+                            newService = Service.Parse1(ServerReturn[i].ToString());
                         }
                         catch (Exception x)
                         {
@@ -1921,20 +1922,23 @@ namespace Trinity.OpenStack
             return ServiceList;
         }
 
-        public static Service Parse(string server_return)
-        {
+        public static Service Parse1(string server_return)
+        {   // server_return does not have OS-KSADM:service
+
             Service return_service = new Service();
 
             try
             {
                 JObject oServerReturn = JObject.Parse(server_return);
-                String serviceStr = oServerReturn["service"].ToString();
+                // String serviceStr = oServerReturn["OS-KSADM:service"].ToString();
 
-                JObject oServiceStr = JObject.Parse(serviceStr);
-                String service_name = oServiceStr["name"].ToString();
-                String service_type = oServiceStr["type"].ToString();
-                String service_description = oServiceStr["description"].ToString();
+                // JObject oServiceStr = JObject.Parse(serviceStr);
+                String service_id = oServerReturn["id"].ToString();
+                String service_name = oServerReturn["name"].ToString();
+                String service_type = oServerReturn["type"].ToString();
+                String service_description = oServerReturn["description"].ToString();
 
+                return_service.id = service_id;
                 return_service.name = service_name;
                 return_service.type = service_type;
                 return_service.description = service_description;
@@ -1947,7 +1951,36 @@ namespace Trinity.OpenStack
             }
         }
 
-    } //end class
+        public static Service Parse(string server_return)
+        {   // server_return does have OS-KSADM:service
+
+            Service return_service = new Service();
+
+            try
+            {
+                JObject oServerReturn = JObject.Parse(server_return);
+                String serviceStr = oServerReturn["OS-KSADM:service"].ToString();
+
+                JObject oServiceStr = JObject.Parse(serviceStr);
+                String service_id = oServiceStr["id"].ToString();
+                String service_name = oServiceStr["name"].ToString();
+                String service_type = oServiceStr["type"].ToString();
+                String service_description = oServiceStr["description"].ToString();
+
+                return_service.id = service_id;
+                return_service.name = service_name;
+                return_service.type = service_type;
+                return_service.description = service_description;
+
+                return return_service;
+            }
+            catch
+            {
+                throw new BadJson("Service Parse command contained incorrect fields.");
+            }
+        }
+
+    } //end class 
 
     #endregion
 
