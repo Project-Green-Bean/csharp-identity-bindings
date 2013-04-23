@@ -1633,7 +1633,7 @@ namespace Trinity.OpenStack
     #region Service Methods
     //------------------------------------------------
     // by Arnold Yang
-    // last updated on 3:25 PM 22 Jan 2013
+    // last updated on 10:58PM on 22 April 2013
     //------------------------------------------------
 
     public class Service
@@ -1669,7 +1669,7 @@ namespace Trinity.OpenStack
         /// as a string. </returns>
         /// Function approved by: David Nikaido & Kendall Bailey
         //------------------------------------------------
-        public static string Create(string url, string name, string service_type, string description,
+        public static Service Create(string url, string name, string service_type, string description,
                                             string admin_token)
         {
 
@@ -1726,14 +1726,24 @@ namespace Trinity.OpenStack
              
                 return (return_user);
                 */
-                return ret;
+                // return ret;
 
             }
             catch (Exception x)
             {   /*
                 return_user.name = x.ToString();
                 return (return_user); */
-                return x.ToString();
+                //return x.ToString();
+                throw OpenStackObject.Parse_Error(x);
+            }
+
+            try
+            {
+                return Service.Parse(ret);
+            }
+            catch
+            {
+                throw new BadJson("Service failed to parse correctly, but was still created.");
             }
         }
 
@@ -1751,9 +1761,8 @@ namespace Trinity.OpenStack
         /// If unsuccessful, returns an error message as a string. </returns>
         /// Function approved by: David Nikaido & Kendall Bailey
         //------------------------------------------------
-        public static string Delete(string url, string service_id, string admin_token)
+        public static void Delete(string url, string service_id, string admin_token)
         {
-            string ret = "";
             try
             {
                 string delete_url = url + "/v2.0/OS-KSADM/services/" + service_id;
@@ -1768,14 +1777,10 @@ namespace Trinity.OpenStack
                 HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
                 Stream resStream = resp.GetResponseStream();
                 StreamReader reader = new StreamReader(resStream);
-                ret = reader.ReadToEnd();
-
-                return "Service was successfully deleted.";
-
             }
             catch (Exception x)
             {
-                return ("Exception caught: \n" + x.ToString());
+                throw OpenStackObject.Parse_Error(x);
             }
 
         }
@@ -1796,11 +1801,11 @@ namespace Trinity.OpenStack
         /// returns an error message as a string. </returns>
         /// Function approved by: David Nikaido & Kendall Bailey
         //------------------------------------------------
-        public static string Get(string url, string service_id, string admin_token)
+        public static Service Get(string url, string service_id, string admin_token)
         {
             Service return_service = new Service();
-
             string ret = "";
+
             try
             {
                 string get_url = url + "/v2.0/OS-KSADM/services/" + service_id;
@@ -1819,13 +1824,22 @@ namespace Trinity.OpenStack
                 /*return_user = User.Parse(ret); 
 
                 return return_user;*/
-                return ret;
+                //return ret;
             }
             catch (Exception x)
             {   /*
                 return_user.enabled = x.ToString();
                 return return_user;*/
-                return "failed";
+                //return "failed";
+                throw OpenStackObject.Parse_Error(x);
+            }
+            try
+            {
+                return Service.Parse(ret);
+            }
+            catch
+            {
+                throw new BadJson("Service failed to parse correctly, but was retrieved.");
             }
         }
 
@@ -1844,14 +1858,14 @@ namespace Trinity.OpenStack
         /// of each of the services. If unsuccessful, returns an error message as a string. </returns>
         /// Function approved by: David Nikaido & Kendall Bailey
         //------------------------------------------------
-        public static string List(string url, string admin_token)
+        public static List<Service> List(string url, string admin_token)
         {
             string ret = "";
-
-            string list_url = url + "/v2.0/OS-KSADM/services/";
+            List<Service> ServiceList = new List<Service>();
 
             try
             {
+                string list_url = url + "/v2.0/OS-KSADM/services/";
                 HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(list_url);
 
                 webRequest.Method = "GET";
@@ -1869,12 +1883,67 @@ namespace Trinity.OpenStack
 
                 return usersStr;
                  */
-                return ret;
+                //return ret;
 
             }
             catch (Exception x)
             {
-                return (x.ToString());
+                //return (x.ToString());
+                throw OpenStackObject.Parse_Error(x);
+            }
+
+            try
+            {
+                JObject root = JObject.Parse(ret);
+                JArray ServerReturn = (JArray)root["services"];
+
+                if (ServerReturn != null)
+                {
+                    for (int i = 0; i < ServerReturn.Count; i++)
+                    {
+                        Service newService = new Service();
+                        try
+                        {
+                            newService = Service.Parse(ServerReturn[i].ToString());
+                        }
+                        catch (Exception x)
+                        {
+                            throw new BadJson("Service List failed to parse correctly, but was retrieved.");
+                        }
+                        ServiceList.Add(newService);
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                throw OpenStackObject.Parse_Error(x);
+            }
+            return ServiceList;
+        }
+
+        public static Service Parse(string server_return)
+        {
+            Service return_service = new Service();
+
+            try
+            {
+                JObject oServerReturn = JObject.Parse(server_return);
+                String serviceStr = oServerReturn["service"].ToString();
+
+                JObject oServiceStr = JObject.Parse(serviceStr);
+                String service_name = oServiceStr["name"].ToString();
+                String service_type = oServiceStr["type"].ToString();
+                String service_description = oServiceStr["description"].ToString();
+
+                return_service.name = service_name;
+                return_service.type = service_type;
+                return_service.description = service_description;
+
+                return return_service;
+            }
+            catch
+            {
+                throw new BadJson("Service Parse command contained incorrect fields.");
             }
         }
 
