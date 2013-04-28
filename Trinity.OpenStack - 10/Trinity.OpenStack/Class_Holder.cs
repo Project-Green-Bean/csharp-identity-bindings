@@ -511,7 +511,7 @@ namespace Trinity.OpenStack
         //--  Written By : Tommy Arnold                       Operating System : Windows 7     --//
         //--        Date : 11/23/2012                                 Language : VS 2012 C#    --//
         //=======================================================================================//
-        public static string Update(string adminUrl, string User_Token, string tenantId, string tenantDescription)
+        public static Tenant Update(string url, string User_Token, string tenantId, string tenantDescription)
         {
 
             StreamWriter requestWriter;
@@ -526,7 +526,7 @@ namespace Trinity.OpenStack
 
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(adminUrl + "/v2.0/tenants/" + tenantId);
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + "/v2.0/tenants/" + tenantId);
                 webRequest.Headers.Add("X-Auth-Token", User_Token);
                 webRequest.Method = "PUT";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -542,12 +542,13 @@ namespace Trinity.OpenStack
                 StreamReader reader = new StreamReader(resStream);
                 ret = reader.ReadToEnd();
 
-                return ret;
+                Tenant updateTenant = Tenant.Get(url, User_Token, tenantId);
+                return updateTenant;
             }
             catch (Exception x)
             {
                 throw x;
-            }
+            } 
         }
 
 
