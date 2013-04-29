@@ -18,7 +18,7 @@ using Trinity.OpenStack;
 
 namespace Trinity.OpenStack.Tests
 {
-
+    #region EndpointTests
     public class TestCreateEndpoint
     {
 
@@ -878,13 +878,13 @@ namespace Trinity.OpenStack.Tests
 
         }
     }
-    
+    #endregion
     #region userTests
     public class TestAddUser
     {
         public string testTenantID = String.Empty;
         public List<User> users = new List<User>();
-        protected List<User> disposableUsers;
+        public List<User> disposableUsers;
 
         public Boolean setUp(string admin_url, string admin_token, string testTenantName)
         {
@@ -1163,7 +1163,7 @@ namespace Trinity.OpenStack.Tests
     public class TestAddUserRole
     {
         protected List<Role> roles;
-        protected List<Role> disposableRoles;
+        public List<Role> disposableRoles;
         public List<Role> userRoles;
         protected User roleTestUser;
         public string testTenantId = String.Empty;
