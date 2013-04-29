@@ -882,70 +882,25 @@ namespace Trinity.OpenStack.Tests
     #region userTests
     public class TestAddUser
     {
-        public string user_testTenantid = String.Empty;
+        public string testTenantID = String.Empty;
         public List<User> users = new List<User>();
-        public Token UserTestToken;
         protected List<User> disposableUsers;
-        protected int BaseCount = 0;
-        public string errorStep = "nothing";
 
-        public Boolean Set_Up_Add_User_Test(string admin_url, string admin_token, string testTenantName)
+        public Boolean setUp(string admin_url, string admin_token, string testTenantName)
         {
-            string admin_url2 = admin_url + "/v2.0/";
-
             disposableUsers = new List<User>();
-            string testTenantId = String.Empty;
-            string testUserName = "UserTestUser";
-            string testUserPw = "userpass123";
-
-            try //Create Tenant
+            try
             {
-                Create_Test_Tenant(ref testTenantId, testTenantName, admin_url, admin_token); //Create Tenant
-
-                user_testTenantid = testTenantId;
-
-                try
-                {
-                    UserTestToken = Token.Request_NoTenant(admin_url, testUserName, testUserPw);
-                    if (UserTestToken.token_error.Equals(String.Empty))
-                    {
-                        users = new List<User>();
-                        users = User.List(admin_url, UserTestToken.token_id);
-                        BaseCount = users.Count;
-                        errorStep = " return true";
-                        return true;
-                    }
-                    else 
-                    {
-                        errorStep = " return false";
-                        Tear_Down_Add_User_Test(admin_url, admin_token, testTenantId);
-                        return false;
-                    }
-
-                }
-                catch (Exception x)
-                {
-                    try
-                    {
-                        Tear_Down_Add_User_Test(admin_url, admin_token, testTenantId);
-                    }
-                    catch
-                    {
-                        Delete_Test_Tenant(testTenantId, admin_url2, admin_token);
-                    }
-                    errorStep = " Request_NoTenant";
-
-                    throw x;
-                }
-            } //End Create Tenant
+                users = User.List(admin_url, admin_token);
+                return Create_Test_Tenant(testTenantName, admin_url, admin_token, ref testTenantID);
+            }
             catch (Exception x)
             {
-                //errorStep = " Create_Test_Tenant";
                 throw x;
             }
         }
 
-        public Boolean Tear_Down_Add_User_Test(string admin_url, string admin_token, string testTenantId)
+        public Boolean tearDown(string admin_url, string admin_token)
         {
             try
             {
@@ -955,63 +910,42 @@ namespace Trinity.OpenStack.Tests
                     disposableUsers.RemoveAt(0);
                 }
             }
-            catch
-            {
-                //do nothing
-            }
+            catch { }
 
-            Boolean ret = true;
+            users = User.List(admin_url, admin_token);
 
-            ret |= Delete_Test_Tenant(testTenantId, admin_url + "/v2.0/", admin_token);
+            Delete_Test_Tenant(admin_url, admin_token, testTenantID);
+            testTenantID = String.Empty;
 
-            if (ret == true)
-            {
-                user_testTenantid = String.Empty;
-            }
-            return ret;
-
+            return true;
         }
 
-        public Boolean Run_Add_User_Test(string admin_url, string admin_token, string tenant_id, int iterationNumber, string name, string password, Boolean trace, ref string output)
-        {
-            if (Test_User_List(admin_url, admin_token, iterationNumber))
-            {
-                errorStep = " before User.Add";
-                User u = User.Add(admin_url, name, password, "true", user_testTenantid, "null", UserTestToken.token_id);
-                errorStep = " after User.Add";
-                disposableUsers.Add(u);
-                if (trace == true)
-                {
-                    output = u.ToString();
-                }
-            }
-            else
-            {
-                return false;
-            }
-
-            return Test_User_List(admin_url, admin_token, iterationNumber + 1);
-        }
-
-        public bool Test_User_List(string admin_url, string admin_token, int iterationNumber)
+        public Boolean run(string admin_url, string admin_token, string name, string password, string email)
         {
             try
             {
-                errorStep = " before User.List";
-                users = User.List(admin_url, admin_token);
-                return users.Count == (iterationNumber + BaseCount);
+                User u = User.Add(admin_url, name, password, "true", testTenantID, email, admin_token);
+                List<User> newUsers = User.List(admin_url, admin_token);
+                if (newUsers.Count == users.Count+1) {
+                    users = newUsers;
+                    disposableUsers.Add(u);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
             catch (Exception x)
             {
-                //errorStep = " Test_User_List";
+                tearDown(admin_url, admin_token);
                 throw x;
             }
         }
 
-        private bool Create_Test_Tenant(ref string testTenantId, string tenantName, string admin_url, string admin_token)
+        private bool Create_Test_Tenant(string tenantName, string admin_url, string admin_token, ref string tenID)
         {
             StreamWriter requestWriter;
-            testTenantId = String.Empty;
 
             string postData = "{" +
                                 "\"tenant\":{" +
@@ -1039,23 +973,23 @@ namespace Trinity.OpenStack.Tests
                 StreamReader reader = new StreamReader(resStream);
 
                 JObject ret = JObject.Parse(reader.ReadToEnd());
-
-                testTenantId = ret["tenant"]["id"].ToString();
+                // MessageBox.Show(ret.ToString());
+                tenID = ret["tenant"]["id"].ToString();
 
                 return true;
             }
             catch (Exception x)
             {
-                throw x;
+                return false;
             }
 
         }
 
-        private bool Delete_Test_Tenant(string tenantId, string admin_url, string admin_token)
+        private bool Delete_Test_Tenant(string admin_url, string admin_token, string tenID)
         {
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants/" + tenantId);
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "/v2.0/tenants/" + tenID);
                 webRequest.Headers.Add("X-Auth-Token", admin_token);
                 webRequest.Method = "DELETE";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -1072,7 +1006,6 @@ namespace Trinity.OpenStack.Tests
             }
             catch (Exception x)
             {
-                
                 throw x;
             }
         }
@@ -1080,68 +1013,26 @@ namespace Trinity.OpenStack.Tests
 
     public class TestDeleteUser
     {
-        public string user_testTenantid = String.Empty;
+        public string testTenantID = String.Empty;
         public List<User> users = new List<User>();
-        public Token UserTestToken;
-        public List<User> disposableUsers;
-        protected int BaseCount = 0;
+        protected List<User> disposableUsers;
 
-        public Boolean Set_Up_Delete_User_Test(string admin_url, string admin_token, string testTenantName)
+        public Boolean setUp(string admin_url, string admin_token, string testTenantName)
         {
-            string admin_url2 = admin_url + "/v2.0/";
-
             disposableUsers = new List<User>();
-            string testTenantId = String.Empty;
-            string testUserName = "UserTestUser";
-            string testUserPw = "userpass123";
-
             try
             {
-                Create_Test_Tenant(ref testTenantId, testTenantName, admin_url2, admin_token); //Create Tenant
-
-                user_testTenantid = testTenantId;
+                Create_Test_Tenant(testTenantName, admin_url, admin_token, ref testTenantID);
                 try
                 {
-                    UserTestToken = Token.Request_NoTenant(admin_url, testUserName, testUserPw);
-                    if (UserTestToken.token_error.Equals(String.Empty))
-                    {
-                        users = new List<User>();
-                        users = User.List(admin_url, UserTestToken.token_id);
-                        BaseCount = users.Count;
-
-                        try
-                        {
-                            for (int i = 0; i < 10; i++)
-                            {
-                                User u = User.Add(admin_token, "testDeleteUser1138_" + i, "password" + i, "true", testTenantId, "null", admin_token);
-                                disposableUsers.Add(u);
-                            }
-                        }
-                        catch (Exception x)
-                        {
-                            Tear_Down_Delete_User_Test(admin_url, admin_token, testTenantId);
-                            return false;
-                        }
-
-                        return true;
-                    }
-                    else
-                    {
-                        Tear_Down_Delete_User_Test(admin_url, admin_token, testTenantId);
-                        return false;
-                    }
-
+                    for (int i = 0; i < 10; ++i)
+                        disposableUsers.Add(User.Add(admin_url, "TestUser_" + i, "testPass" + i, "true", testTenantID, "email" + i + "@email.com", admin_token));
+                    users = User.List(admin_url, admin_token);
+                    return true;
                 }
                 catch (Exception x)
                 {
-                    try
-                    {
-                        Tear_Down_Delete_User_Test(admin_url, admin_token, testTenantId);
-                    }
-                    catch
-                    {
-                        Delete_Test_Tenant(testTenantId, admin_url2, admin_token);
-                    }
+                    Delete_Test_Tenant(admin_url, admin_token, testTenantID);
                     throw x;
                 }
             }
@@ -1151,7 +1042,7 @@ namespace Trinity.OpenStack.Tests
             }
         }
 
-        public Boolean Tear_Down_Delete_User_Test(string admin_url, string admin_token, string testTenantId)
+        public Boolean tearDown(string admin_url, string admin_token)
         {
             try
             {
@@ -1161,63 +1052,49 @@ namespace Trinity.OpenStack.Tests
                     disposableUsers.RemoveAt(0);
                 }
             }
-            catch
-            {
-                //do nothing
-            }
+            catch { }
 
-            Boolean ret = true;
+            users = User.List(admin_url, admin_token);
 
-            ret |= Delete_Test_Tenant(testTenantId, admin_url + "/v2.0/", admin_token);
-            if (ret == true)
-            {
-                user_testTenantid = String.Empty;
-            }
-            return ret;
+            Delete_Test_Tenant(admin_url, admin_token, testTenantID);
+            testTenantID = String.Empty;
+
+            return true;
         }
 
-        public Boolean Run_Test_Delete_User(string admin_url, string admin_token, int iterationNumber)
+        public Boolean run(string admin_url, string admin_token, string userID)
         {
             try
             {
-                Test_Delete_User_List(ref users, admin_url, admin_token, iterationNumber);
-                int i = 0;
-                User u = users[i];
+                int usersCount = users.Count;
 
-                while (i < users.Count)
+                User.Delete(admin_url, userID, admin_token);
+                users = User.List(admin_url, admin_token);
+
+                if (users.Count == usersCount-1)
                 {
-                    if (u.id.Equals(disposableUsers[i].id))
-                    {
-                        User.Delete(admin_url, u.id, admin_token);
-                        break;
-                    }
-                    i += 1;
+                    return true;
+                }
+                else
+                {
+                    return false;
                 }
             }
             catch (Exception x)
             {
+                tearDown(admin_url, admin_token);
                 throw x;
             }
-            return Test_Delete_User_List(ref users, admin_url, admin_token, iterationNumber + 1);
         }
 
-        public bool Test_Delete_User_List(ref List<User> users, string admin_url, string admin_token, int iterationNumber)
+        public List<User> getDisposable()
         {
-            try
-            {
-                users = User.List(admin_url, admin_token);
-                return users.Count == (BaseCount + (10 - iterationNumber));
-            }
-            catch (Exception x)
-            {
-                throw x;
-            }
+            return disposableUsers;
         }
 
-        private bool Create_Test_Tenant(ref string testTenantId, string tenantName, string admin_url, string admin_token)
+        private bool Create_Test_Tenant(string tenantName, string admin_url, string admin_token, ref string tenID)
         {
             StreamWriter requestWriter;
-            testTenantId = String.Empty;
 
             string postData = "{" +
                                 "\"tenant\":{" +
@@ -1229,7 +1106,7 @@ namespace Trinity.OpenStack.Tests
 
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants");
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "/v2.0/tenants");
                 webRequest.Headers.Add("X-Auth-Token", admin_token);
                 webRequest.Method = "POST";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -1246,8 +1123,7 @@ namespace Trinity.OpenStack.Tests
 
                 JObject ret = JObject.Parse(reader.ReadToEnd());
                 // MessageBox.Show(ret.ToString());
-                testTenantId = ret["tenant"]["id"].ToString();
-
+                tenID = ret["tenant"]["id"].ToString();
 
                 return true;
             }
@@ -1255,13 +1131,14 @@ namespace Trinity.OpenStack.Tests
             {
                 return false;
             }
+
         }
 
-        private bool Delete_Test_Tenant(string tenantId, string admin_url, string admin_token)
+        private bool Delete_Test_Tenant(string admin_url, string admin_token, string tenID)
         {
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants/" + tenantId);
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "/v2.0/tenants/" + tenID);
                 webRequest.Headers.Add("X-Auth-Token", admin_token);
                 webRequest.Method = "DELETE";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -1274,6 +1151,7 @@ namespace Trinity.OpenStack.Tests
                 StreamReader reader = new StreamReader(resStream);
 
                 return true;
+
             }
             catch (Exception x)
             {
@@ -1284,52 +1162,27 @@ namespace Trinity.OpenStack.Tests
 
     public class TestAddUserRole
     {
-        public List<Role> disposableRoles;
-        public Token roleTestToken;
-        User roleTestUser;
-        public string role_testTenantid = String.Empty;
-        protected int BaseCount = 0;
+        protected List<Role> roles;
+        protected List<Role> disposableRoles;
+        public List<Role> userRoles;
+        protected User roleTestUser;
+        public string testTenantId = String.Empty;
 
         public Boolean setUp(string admin_url, string admin_token, string testTenantName)
         {
             try
             {
-                //create test tenant
-                Create_Test_Tenant(testTenantName, admin_url + "/v2.0/", admin_token);
+                Create_Test_Tenant(testTenantId, admin_url, admin_token, ref testTenantId);
                 try
                 {
-                    //create test user
-                    string testUserName = "RoleAddTestUser";
-                    string testUserPass = "userpass1";
-                    roleTestUser = User.Add(admin_url, testUserName, testUserPass, "true", role_testTenantid, "null", admin_token);
-
-                    roleTestToken = Token.Request_NoTenant(admin_url, roleTestUser.name, roleTestUser.password);
-                    if (roleTestToken.token_error.Equals(String.Empty))
-                    {
-                        //initialize list of test user roles  
-                        disposableRoles = User.List_Roles(admin_url, roleTestUser.id, role_testTenantid, admin_token);
-                        BaseCount = disposableRoles.Count;
-                        return true;
-                    }
-                    else
-                    {
-                        tearDown(admin_url, admin_token);
-                    }
+                    roleTestUser = User.Add(admin_url, "roleTestUser", "password", "true", testTenantId, "email@email.email", admin_token);
+                    return true;
                 }
                 catch (Exception x)
                 {
-                    try
-                    {
-                        tearDown(admin_url, admin_token);
-                    }
-                    catch
-                    {
-                        Delete_Test_Tenant(role_testTenantid, admin_url + "/v2.0/", admin_token);
-                    }
+                    Delete_Test_Tenant(admin_url, admin_token, testTenantId);
                     throw x;
                 }
-
-                return true;
             }
             catch (Exception x)
             {
@@ -1344,15 +1197,12 @@ namespace Trinity.OpenStack.Tests
                 //delete all test roles
                 while (disposableRoles.Count > 0)
                 {
-                    User.DeleteRoleOfUser(admin_url, roleTestUser.id, role_testTenantid, disposableRoles[0].id, admin_token);
+                    User.DeleteRoleOfUser(admin_url, roleTestUser.id, testTenantId, disposableRoles[0].id, admin_token);
                     Role.Delete(admin_url, disposableRoles[0].id, admin_token);
                     disposableRoles.RemoveAt(0);
                 }
             }
-            catch
-            {
-                //do nothing
-            }
+            catch { }
             Boolean ret = true;
 
             //delete test user
@@ -1363,49 +1213,37 @@ namespace Trinity.OpenStack.Tests
             catch { }
 
             //delete test tenant
-            ret |= Delete_Test_Tenant(role_testTenantid, admin_url + "/v2.0/", admin_token);
+            ret |= Delete_Test_Tenant(admin_url, admin_token, testTenantId);
             if (ret == true)
             {
-                role_testTenantid = String.Empty;
+                testTenantId = String.Empty;
             }
             return ret;
         }
 
-        public Boolean run(string admin_url, string admin_token, int iterationNumber, Boolean trace, ref string output)
+        public Boolean run(string admin_url, string admin_token, string roleName)
         {
             try
             {
-                Test_Add_User_Role_List(admin_url, admin_token, iterationNumber);
-
-                Role r = Role.Add(admin_url, "UserAddRoleTestRole" + iterationNumber, admin_token);
+                Role r = Role.Add(admin_url, roleName, admin_token);
                 User.AddRoleToUser(admin_url, roleTestUser.id, roleTestUser.tenantid, r.id, admin_token);
                 disposableRoles.Add(r);
-                if (trace == true)
+                if (disposableRoles.Count == userRoles.Count + 1)
                 {
-                    output = r.ToString();
+                    userRoles = User.List_Roles(admin_url, roleTestUser.id, testTenantId, admin_token);
+                    return true;
                 }
+                else
+                    return false;
             }
             catch (Exception x)
             {
-                throw x;
-            }
-            return Test_Add_User_Role_List(admin_url, admin_token, iterationNumber + 1);
-        }
-
-        public bool Test_Add_User_Role_List(string admin_url, string admin_token, int iterationNumber)
-        {
-            try
-            {
-                disposableRoles = User.List_Roles(admin_url, roleTestUser.id, roleTestUser.tenantid, admin_token);
-                return disposableRoles.Count == (iterationNumber + BaseCount);
-            }
-            catch (Exception x)
-            {
+                tearDown(admin_url, admin_token);
                 throw x;
             }
         }
 
-        private bool Create_Test_Tenant(string tenantName, string admin_url, string admin_token)
+        private bool Create_Test_Tenant(string tenantName, string admin_url, string admin_token, ref string tenID)
         {
             StreamWriter requestWriter;
 
@@ -1419,7 +1257,7 @@ namespace Trinity.OpenStack.Tests
 
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants");
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "/v2.0/tenants");
                 webRequest.Headers.Add("X-Auth-Token", admin_token);
                 webRequest.Method = "POST";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -1436,8 +1274,7 @@ namespace Trinity.OpenStack.Tests
 
                 JObject ret = JObject.Parse(reader.ReadToEnd());
                 // MessageBox.Show(ret.ToString());
-                role_testTenantid = ret["tenant"]["id"].ToString();
-
+                tenID = ret["tenant"]["id"].ToString();
 
                 return true;
             }
@@ -1448,11 +1285,11 @@ namespace Trinity.OpenStack.Tests
 
         }
 
-        private bool Delete_Test_Tenant(string tenantId, string admin_url, string admin_token)
+        private bool Delete_Test_Tenant(string admin_url, string admin_token, string tenID)
         {
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants/" + tenantId);
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "/v2.0/tenants/" + tenID);
                 webRequest.Headers.Add("X-Auth-Token", admin_token);
                 webRequest.Method = "DELETE";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -1744,7 +1581,7 @@ namespace Trinity.OpenStack.Tests
             }
             return ret;
         }
-        
+
         public Boolean run(string admin_url, string admin_token, string userID, string username, string email, string enabled, string tenantID)
         {
             User update = new User();
@@ -1933,28 +1770,70 @@ namespace Trinity.OpenStack.Tests
 
     public class TestGetUser
     {
-        public List<User> users;
-        public List<User> disposableUsers;
-        public Token getTestToken;
-        public string get_testTenantID = String.Empty;
-        protected int BaseCount = 0;
+        public User getTestUser;
+        public User user = new User();
+        public string testTenantId = String.Empty;
 
         public Boolean setUp(string admin_url, string admin_token, string testTenantName)
         {
+            try
+            {
+                Create_Test_Tenant(testTenantName, admin_url, admin_token, ref testTenantId);
+                try
+                {
+                    string testUserName = "updateTestUser";
+                    string testUserPass = "userpass1";
+                    getTestUser = User.Add(admin_url, testUserName, testUserPass, "true", testTenantId, "null", admin_token);
+                }
+                catch (Exception x)
+                {
+                    try
+                    {
+                        tearDown(admin_url, admin_token);
+                    }
+                    catch
+                    {
+                        Delete_Test_Tenant(admin_url, admin_token, testTenantId);
+                    }
+                    throw x;
+                }
+            }
+            catch (Exception x)
+            {
+                throw x;
+            }
             return true;
         }
 
         public Boolean tearDown(string admin_url, string admin_token)
         {
+            try
+            {
+                User.Delete(admin_url, getTestUser.id, admin_token);
+            }
+            catch { }
+
+            Delete_Test_Tenant(admin_url, admin_token, testTenantId);
+            testTenantId = String.Empty;
+
             return true;
         }
 
-        public Boolean run(string admin_url, string admin_token)
+        public Boolean run(string admin_url, string admin_token, string userID)
         {
-            return true;
+            try
+            {
+                user = User.GetUserById(admin_url, admin_token, userID);
+                return true;
+            }
+            catch (Exception x)
+            {
+                tearDown(admin_url, admin_token);
+                throw x;
+            }
         }
 
-        private bool Create_Test_Tenant(string tenantName, string admin_url, string admin_token)
+        private bool Create_Test_Tenant(string tenantName, string admin_url, string admin_token, ref string tenID)
         {
             StreamWriter requestWriter;
 
@@ -1968,7 +1847,7 @@ namespace Trinity.OpenStack.Tests
 
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants");
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "/v2.0/tenants");
                 webRequest.Headers.Add("X-Auth-Token", admin_token);
                 webRequest.Method = "POST";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -1985,8 +1864,7 @@ namespace Trinity.OpenStack.Tests
 
                 JObject ret = JObject.Parse(reader.ReadToEnd());
                 // MessageBox.Show(ret.ToString());
-                get_testTenantID = ret["tenant"]["id"].ToString();
-
+                tenID = ret["tenant"]["id"].ToString();
 
                 return true;
             }
@@ -1997,11 +1875,11 @@ namespace Trinity.OpenStack.Tests
 
         }
 
-        private bool Delete_Test_Tenant(string admin_url, string admin_token)
+        private bool Delete_Test_Tenant(string admin_url, string admin_token, string tenID)
         {
             try
             {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants/" + get_testTenantID);
+                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "/v2.0/tenants/" + tenID);
                 webRequest.Headers.Add("X-Auth-Token", admin_token);
                 webRequest.Method = "DELETE";
                 webRequest.ServicePoint.Expect100Continue = false;
@@ -2025,185 +1903,14 @@ namespace Trinity.OpenStack.Tests
 
     public class TestListUser
     {
-        public List<User> users;
-        public List<User> disposableUsers;
-        public Token listTestToken;
-        public string list_testTenantID = String.Empty;
-        protected int BaseCount = 0;
+        public List<User> users = new List<User>();
 
-        public Boolean setUp(string admin_url, string admin_token, string testTenantName)
-        {
-            disposableUsers = new List<User>();
-            string testTenantId = String.Empty;
-            string testUserName = "UserTestUser";
-            string testUserPw = "userpass123";
-
-            try //Create Tenant
-            {
-                Create_Test_Tenant(testTenantName, admin_url + "/v2.0/", admin_token); //Create Tenant
-
-                list_testTenantID = testTenantId;
-
-                try
-                {
-                    listTestToken = Token.Request_NoTenant(admin_url, testUserName, testUserPw);
-                    if (listTestToken.token_error.Equals(String.Empty))
-                    {
-                        users = new List<User>();
-                        users = User.List(admin_url, listTestToken.token_id);
-                        BaseCount = users.Count;
-                        return true;
-                    }
-                    else
-                    {
-                        tearDown(admin_url, admin_token);
-                        return false;
-                    }
-
-                }
-                catch (Exception x)
-                {
-                    try
-                    {
-                        tearDown(admin_token, admin_token);
-                    }
-                    catch
-                    {
-                        Delete_Test_Tenant(admin_url + "/v2.0/", admin_token);
-                    }
-                    throw x;
-                }
-            } //End Create Tenant
-            catch (Exception x)
-            {
-                throw x;
-            }
-        }
-
-        public Boolean tearDown(string admin_url, string admin_token)
-        {
-            try
-            {
-                while (disposableUsers.Count > 0)
-                {
-                    User.Delete(admin_url, disposableUsers[0].id, admin_token);
-                    disposableUsers.RemoveAt(0);
-                }
-            }
-            catch
-            {
-                //do nothing
-            }
-
-            Boolean ret = true;
-
-            ret |= Delete_Test_Tenant(admin_url + "/v2.0/", admin_token);
-
-            if (ret == true)
-            {
-                list_testTenantID = String.Empty;
-            }
-            return ret;
-        }
-
-        public Boolean run(string admin_url, string admin_token, int iterations, string name, string password, Boolean trace, ref string output)
-        {
-            try
-            {
-                Test_User_List(ref users, admin_url, admin_token, iterations);
-
-                for (int i = 0; i < iterations; ++i)
-                {
-                    User u = User.Add(admin_url, name + i, password, "true", list_testTenantID, "null", admin_token);
-                    disposableUsers.Add(u);
-                    if (trace == true)
-                    {
-                        output = u.ToString();
-                    }
-                }
-            }
-            catch (Exception x)
-            {
-                throw x;
-            }
-
-            return Test_User_List(ref users, admin_url, admin_token, iterations);
-        }
-
-        public bool Test_User_List(ref List<User> users, string admin_url, string admin_token, int iterations)
+        public Boolean run(string admin_url, string admin_token)
         {
             try
             {
                 users = User.List(admin_url, admin_token);
-                return users.Count == (iterations + BaseCount);
-            }
-            catch (Exception x)
-            {
-                throw x;
-            }
-        }
-
-        private bool Create_Test_Tenant(string tenantName, string admin_url, string admin_token)
-        {
-            StreamWriter requestWriter;
-
-            string postData = "{" +
-                                "\"tenant\":{" +
-                                            "\"name\":\"" + tenantName + "\", " +
-                                            "\"description\":\"" + "Delete if still present" + "\", " +
-                                            "\"enabled\":" + "true" +
-                                            "}}";
-
-
-            try
-            {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants");
-                webRequest.Headers.Add("X-Auth-Token", admin_token);
-                webRequest.Method = "POST";
-                webRequest.ServicePoint.Expect100Continue = false;
-                webRequest.Timeout = 2000;
-                webRequest.ContentType = "application/json";
-
-                requestWriter = new StreamWriter(webRequest.GetRequestStream());
-                requestWriter.Write(postData);
-                requestWriter.Close();
-
-                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
-                Stream resStream = resp.GetResponseStream();
-                StreamReader reader = new StreamReader(resStream);
-
-                JObject ret = JObject.Parse(reader.ReadToEnd());
-                // MessageBox.Show(ret.ToString());
-                list_testTenantID = ret["tenant"]["id"].ToString();
-
-
                 return true;
-            }
-            catch (Exception x)
-            {
-                return false;
-            }
-
-        }
-
-        private bool Delete_Test_Tenant(string admin_url, string admin_token)
-        {
-            try
-            {
-                HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(admin_url + "tenants/" + list_testTenantID);
-                webRequest.Headers.Add("X-Auth-Token", admin_token);
-                webRequest.Method = "DELETE";
-                webRequest.ServicePoint.Expect100Continue = false;
-                webRequest.Timeout = 2000;
-                webRequest.ContentType = "application/json";
-
-
-                HttpWebResponse resp = (HttpWebResponse)webRequest.GetResponse();
-                Stream resStream = resp.GetResponseStream();
-                StreamReader reader = new StreamReader(resStream);
-
-                return true;
-
             }
             catch (Exception x)
             {
@@ -2211,5 +1918,5 @@ namespace Trinity.OpenStack.Tests
             }
         }
     }
-    #endregion    
+    #endregion
 }
